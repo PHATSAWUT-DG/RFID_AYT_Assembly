@@ -10,6 +10,13 @@
 
 **Status:** This is a development-stage system. Defects found during analysis are fixed, not preserved. See the Decisions Log.
 
+> **Review 2026-10-14 — read this first.**
+>
+> - **Tasks 1–9 are done** (commits `ca7b743` … `544f90b`). Status per task is in [Task status](#task-status-reviewed-2026-10-14).
+> - **Tasks 10–22 are superseded** by the backend redesign: spec `docs/superpowers/specs/2026-10-01-backend-redesign-design.md`, roadmap `docs/superpowers/plans/2026-10-01-backend-redesign-roadmap.md`. The old tables and SPs are already dropped from the dev DB, so those tasks have nothing left to port. Keep them as the record of *why* (D3–D11, FLAG-1, FLAG-2) — the redesign must not lose those fixes.
+> - **The frontend changed after this plan was written.** It is TypeScript now (`.tsx`), has a typed API contract (`frontend/src/types/api.ts`), a mock mode (`frontend/src/mocks/`), and new features (`can_clear_tag`, daily inventory, process breakdown). Every `.js` page path below now means the `.tsx` file. See [Frontend impact — Assembly pages](#frontend-impact--assembly-pages-reviewed-2026-10-14).
+> - **Line numbers in `backend/routes/assembly.js` are pre-Task-4** (557 lines then, 417 now). Find a route by its path, not its line.
+
 ---
 
 ## Context an engineer needs before starting
@@ -27,7 +34,7 @@ Order is enforced inside the stored procedures today. That enforcement is the sy
 
 ### Who calls the backend
 
-1. **React frontend** — `frontend/src/`, talks to `http://{server}:5001/api/assembly`.
+1. **React frontend** — `frontend/src/`, talks to `http://{server}:5001/api/assembly`. **It also calls the reader endpoints**: [ScanTag.tsx:42](../../frontend/src/pages/Assembly/ScanTag.tsx#L42) POSTs to `/gauging-room-f1` and `/mc-gauging-f1` (paths in [scanConfig.ts:5-6](../../frontend/src/config/scanConfig.ts#L5-L6)) as a manual scan screen. Any change to those codes must update ScanTag too (added 2026-10-14).
 2. **Python reader service** — `service/main_assy.py`, POSTs to `/gauging-room-f1` and `/mc-gauging-f1`. Runs as a Windows startup script on a 32-bit Python install on the OT network. **Its contract is frozen** — it is the one client that cannot be redeployed alongside the backend.
 3. **The backend's own polling loop** — [server.js:15-63](../../backend/server.js#L15-L63). Simulation code only; see D1.
 
@@ -91,7 +98,7 @@ Findings from analysis, with the decision taken for each. **These are fixes, not
 | D3 | `register` has a TOCTOU gap: `IF EXISTS` then `INSERT`, no transaction | **Fix.** Wrap in a transaction with `UPDLOCK, HOLDLOCK`, and catch duplicate-key as a backstop | 16 |
 | D4 | `TAG_IN_USE` checks `tb_assy_lot.tag_id`, never `tb_assy_tag.status` — the two can disagree | **`tb_assy_tag` becomes the authority for tag pairing**, enforced by a filtered unique index. `TAG_IN_USE` checks it | 14, 16 |
 | D5 | `Stored_tb_assy_dashboard`'s three recordsets filter inconsistently | **Unify.** Same WHERE across recordsets, `status_id != 4` in WHERE where it belongs | 13 |
-| D6 | Same SP: RS1 `total_qty` sums qty, RS2 `total_qty` counts lots | **Delete recordset 2.** Nothing reads it — [Dashboard.js:56](../../frontend/src/pages/Assembly/Dashboard.js#L56) builds its part list from `history` | 13 |
+| D6 | Same SP: RS1 `total_qty` sums qty, RS2 `total_qty` counts lots | **Delete recordset 2.** No page reads it — [Dashboard.tsx:105](../../frontend/src/pages/Assembly/Dashboard.tsx#L105) builds its part list from `history`. The type and mock still carry it; see Task 13 | 13 |
 | D7 | Reader config paths are CWD-relative, so the server only runs from `backend/` | **Fix.** `path.join(__dirname, ...)`, extracted to a service | 19 |
 | D8 | Plaintext passwords | **Fix.** `bcryptjs` + a one-off rehash script | 9 |
 | D9 | CRUD endpoints return `200 {result: '<raw SQL error text>'}` | **Fix.** Real HTTP status codes for the CRUD family, with coordinated frontend changes | 10 |
@@ -121,6 +128,8 @@ Business outcomes are values, not status codes. The Python service and the opera
 | `POST /mc-gauging-f1` | `OK`, `TAG_NOT_FOUND`, `INVALID_PROCESS_ORDER` (renamed in Task 17, D10), `INVALID_STATUS` |
 | `POST /change-process` | `OK`, `TAG_NOT_FOUND`, `INVALID_STATUS`, `ALREADY_COMPLETED`, `SAME_STATUS` |
 | `POST /completed` | `OK`, `LOT_NOT_FOUND`, `INVALID_PROCESS`, `INVALID_STATUS` |
+
+> **2026-10-14:** `INVALID_PROCESS` on `/completed` no longer means "status ≠ 3". Since `alter_process_can_clear_tag.sql` (commit `e6cfbce`) it means "the lot's status is 4, or its status belongs to a process with `can_clear_tag = 0`". The frontend types these codes in [types/api.ts:157-161](../../frontend/src/types/api.ts#L157-L161); a code change here is a change there and in `frontend/src/mocks/handlers/lots.ts`.
 
 **Do not change these.** A `500` where the Python service expects `200 {result:'INVALID_PROCESS'}` turns a silent, correct skip into an error path nobody has written.
 
@@ -152,6 +161,33 @@ Business outcomes are values, not status codes. The Python service and the opera
 | 6 | 19–22 | — | D7, indexes, drop SPs, follow-ups |
 
 Stop at any phase boundary. Each leaves the system working.
+
+### Task status (reviewed 2026-10-14)
+
+| # | Task | Status |
+|---|---|---|
+| 1 | Test harness + dev DB | [x] `backend/test/helpers/fakeDb.js`, env-driven `backend/database.js`, `backend/scripts/setup_dev_database.sql` |
+| 2 | D2 polling column | [x] `backend/server.js:44` writes `status = 'cleared'` |
+| 3 | `db.js` seam | [x] `backend/db.js` |
+| 4 | `apiLogService` | [x] `backend/services/apiLogService.js`, used in `routes/assembly.js:7` |
+| 5 | `mockService` | [x] `backend/services/mockService.js`. FE gap: `MockDone.tsx:62-69` ignores `NOT_FOUND` — see FE finding F6 |
+| 6 | `masterService` — status | [x] `backend/services/masterService.js` |
+| 7 | `masterService` — process | [x] `masterService.js:36-56`, **but missing `can_clear_tag`** — see FE finding F1 |
+| 8 | `userService` | [x] `backend/services/userService.js` |
+| 9 | D8 bcrypt | [x] `userService.js:1`, `backend/scripts/rehash_passwords.js` |
+| 10 | D9 HTTP codes for CRUD | [-] DEFERRED — superseded by redesign B0.2 (`AppError` + error handler) and B1. Resume: carry the FE notes in F3 into B7 |
+| 11 | Dashboard baselines | [-] DEFERRED — superseded; old SPs dropped, nothing to baseline. Resume: none needed |
+| 12 | `dashboardService` — history etc. | [-] DEFERRED — superseded by redesign B5.2 / B5.4. Resume: carry F2, F4 into B5 |
+| 13 | Main dashboard (D5, D6, FLAG-1) | [-] DEFERRED — superseded by redesign B5.4. Resume: carry D5, D6, FLAG-1 and F5 into B5.4 |
+| 14 | Tag-pairing constraint (D4) | [-] DEFERRED — superseded by redesign B1.1 / B2.3. Resume: check the new schema keeps "one active pairing per tag" as a DB constraint |
+| 15 | Transition characterization tests | [-] DEFERRED — superseded; old SPs dropped |
+| 16 | `lotService` (D3, D4) | [-] DEFERRED — superseded by redesign B2.4 / B2.5 |
+| 17 | `processService` — transitions (D10) | [-] DEFERRED — superseded by redesign B3.2. Resume: D10 and F7 must hold for the new `POST /scans` |
+| 18 | `processService` — clear (FLAG-2) | [-] DEFERRED — superseded by redesign B4.2. Resume: carry FLAG-2, `NO_TAG_PAIRED` and F8 into B4.2 |
+| 19 | D7 reader config paths | [-] DEFERRED — not covered by redesign B0–B5 (reader routes stay, roadmap O2). Resume: still a live bug at `routes/assembly.js:228, 237, 393`; do it as a small task before the reader phase |
+| 20 | Indexes | [-] DEFERRED — superseded; new schema in B1.1 defines its own indexes |
+| 21 | Drop SPs | [-] DEFERRED — superseded; SPs already dropped from dev DB per redesign spec §1 |
+| 22 | Docs | [-] DEFERRED — superseded; redesign updates docs per branch |
 
 ---
 
@@ -570,7 +606,7 @@ Expected: a new row matching the pre-refactor shape.
 
 Replaces `mock_done_{select,insert,delete}`.
 
-> **Confirm before porting:** this is the simulation the user is replacing with the real AS400 check (D1). If Mock Done is going away, delete the three routes, the three SPs, and `frontend/src/pages/Assembly/MockDone.js` instead — strictly less work. Ask.
+> **Confirm before porting:** this is the simulation the user is replacing with the real AS400 check (D1). If Mock Done is going away, delete the three routes, the three SPs, and `frontend/src/pages/Assembly/MockDone.tsx` instead — strictly less work. Ask.
 
 **Step 1: Write the failing tests**
 
@@ -643,7 +679,7 @@ const removeMockDone = async (db, lotNo) => {
 module.exports = { listMockDone, addMockDone, removeMockDone };
 ```
 
-> The SP used `SELECT *`; this names its columns. Confirm `MockDone.js` reads only `id`, `lot_no`, `created_at` before committing.
+> The SP used `SELECT *`; this names its columns. Confirm `MockDone.tsx` reads only `id`, `lot_no`, `created_at` before committing.
 
 **Step 4: Run to verify they pass**
 
@@ -810,6 +846,8 @@ DELETE FROM tb_master_process WHERE id = @id
 
 > The SP had no `ORDER BY`. Add `ORDER BY process_code` — the Management list rendering in an arbitrary order is a latent annoyance, and `dashboard_process_summary` already orders this way. This is a deliberate small improvement, not a preservation.
 
+> **2026-10-14:** `tb_master_process` gained `can_clear_tag BIT NOT NULL DEFAULT 0` after this task shipped (`alter_process_can_clear_tag.sql`). The four functions here still read and write only `process_code`, `process_name`. See FE finding F1.
+
 One test per function plus an error-path test. Verify via Management → Process tab.
 
 ---
@@ -945,7 +983,8 @@ Expected: every value starts `$2a$` or `$2b$`. No plaintext.
 - Create: `backend/services/errors.js`, `backend/test/unit/errors.test.js`
 - Modify: `backend/services/{masterService,userService,mockService}.js` + tests
 - Modify: `backend/routes/assembly.js` — CRUD routes only
-- Modify: `frontend/src/pages/Assembly/Management/{UserTab,StatusTab,ProcessTab}.js`, `MockDone.js`
+- Modify: `frontend/src/pages/Assembly/Management/{UserTab,StatusTab,ProcessTab}.tsx`, `MockDone.tsx`
+- Modify: `frontend/src/types/api.ts` (`AdminResult`), `frontend/src/mocks/handlers/admin.ts` — mock mode must return the same 4xx codes (added 2026-10-14; see F3)
 
 **Scope is exactly the CRUD family.** `/login/users*`, `/status*`, `/process*`, `/mock-done*`. **The process family keeps `200 {result}`** — see the contract boundary above. Getting this wrong breaks the Python service.
 
@@ -1045,6 +1084,8 @@ Find the call sites first:
 
 Run: `cd frontend/src && grep -rn "result !== 'OK'\|result === 'OK'\|\.result" pages/Assembly/`
 
+> **2026-10-14:** the grep finds no `result` check in the Management tabs. They already wrap each call in `try/catch` and treat **any** 2xx as success (e.g. [ProcessTab.tsx:29-41](../../frontend/src/pages/Assembly/Management/ProcessTab.tsx#L29-L41)). So today a SQL error (`200 {result:'<SQL text>'}`) shows a **success** toast. Task 10 fixes this on the backend side; on the frontend only the `catch` message changes. `MockDone.tsx:47-52` is the one page that checks `result`.
+
 For each, replace the `data.result !== 'OK'` error check with a non-2xx check. With axios, a non-2xx rejects, so the shape is:
 
 ```js
@@ -1134,7 +1175,12 @@ GROUP BY p.id, p.process_code, p.process_name
 ORDER BY p.process_code ASC
 ```
 
-`AND l.status_id != 4` **must stay in the ON clause**. Moving it to WHERE drops processes currently showing `inventory_qty = 0`. `ISNULL(SUM(l.qty), 0)` stays too — without it those rows return null and [Dashboard.js:306](../../frontend/src/pages/Assembly/Dashboard.js#L306) renders blank.
+`AND l.status_id != 4` **must stay in the ON clause**. Moving it to WHERE drops processes currently showing `inventory_qty = 0`. `ISNULL(SUM(l.qty), 0)` stays too — without it those rows return null and [processBreakdown.ts:17-22](../../frontend/src/pages/Assembly/processBreakdown.ts#L17-L22) sums and divides them into `NaN` (the percent bars break, not just one cell).
+
+> **2026-10-14 — FE calls this task did not list:**
+> - `GET /clear-tag/history` — the page now sends `search` ([ClearTag.tsx:178-179](../../frontend/src/pages/Assembly/ClearTag.tsx#L178-L179)) and the SP accepts `@search` (`alter_clear_tag_history_search.sql`), but the route only binds `date_from`, `date_to`. Search does nothing on the real backend. See F2.
+> - `GET /dashboard/locations` — reads `reader_config.json` with a CWD-relative path (D7). Belongs with Task 19.
+> - `GET /dashboard/daily-inventory` — called by [Dashboard.tsx:133](../../frontend/src/pages/Assembly/Dashboard.tsx#L133), has a Bruno request, but **no backend route**. It works only in mock mode. See F4.
 
 Unit tests: `TOP 200` present on both list queries; date params bound as `sql.Date`; `process_summary`'s `!= 4` appears before `GROUP BY`.
 
@@ -1149,9 +1195,9 @@ Verify: Dashboard → Detail tab with each filter alone and combined; Inventory 
 
 Replaces `Stored_tb_assy_dashboard`. Two deliberate behaviour changes.
 
-**D6 — delete the top-5 recordset.** Nothing reads it: [Dashboard.js:56](../../frontend/src/pages/Assembly/Dashboard.js#L56) derives its part-number options from `history`. Removing it also removes the `total_qty`-means-two-things collision. The route's response becomes `{ summary, lots }`.
+**D6 — delete the top-5 recordset.** No page reads it: [Dashboard.tsx:105](../../frontend/src/pages/Assembly/Dashboard.tsx#L105) derives its part-number options from `history`. Removing it also removes the `total_qty`-means-two-things collision. The route's response becomes `{ summary, lots }`.
 
-> Before deleting, confirm: `cd frontend/src && grep -rn "top5" .` should return nothing.
+> Before deleting, confirm: `cd frontend/src && grep -rn "top5\|Top5" .` — **as of 2026-10-14 this is not empty.** It finds the type ([types/api.ts:55](../../frontend/src/types/api.ts#L55), [:70](../../frontend/src/types/api.ts#L70)) and the mock ([mocks/handlers/dashboard.ts:39](../../frontend/src/mocks/handlers/dashboard.ts#L39), [:64](../../frontend/src/mocks/handlers/dashboard.ts#L64)). No page uses them. Delete `Top5Row`, the `top5` field and `topBearingTypes` in the same change. See F5.
 
 **D5 — one filter block for both remaining queries.** `status_id != 4` moves into the WHERE clause of both, alongside all six filters. Concretely, the summary query changes from
 
@@ -1174,7 +1220,7 @@ WHERE l.status_id != 4
   ${LOT_FILTERS}
 ```
 
-The column names are unchanged, so [Dashboard.js:243](../../frontend/src/pages/Assembly/Dashboard.js#L243) needs no edit.
+The column names are unchanged, so the summary cards at [Dashboard.tsx:316-317](../../frontend/src/pages/Assembly/Dashboard.tsx#L316-L317) need no edit.
 
 A consequence worth knowing: filtering by `status_id = 4` now returns zeros over an *empty* set, which is coherent, where before it returned zeros over a *non-empty* set. Same display, better meaning.
 
@@ -1413,6 +1459,13 @@ if (lot.recordset[0].status_id !== from) return { result: 'INVALID_PROCESS_ORDER
 > **Check the frontend before committing.** `changeProcess` (Task 18) is a different code path and keeps `INVALID_PROCESS`, but confirm nothing in `frontend/src/` string-matches `INVALID_PROCESS` for the reader endpoints:
 > `cd frontend/src && grep -rn "INVALID_PROCESS" .`
 > Update the frozen-contract table in this plan when you make the change.
+>
+> **2026-10-14 — result of that check.** Three places must change with D10 (F7):
+> - [types/api.ts:159](../../frontend/src/types/api.ts#L159) — `ScanResult` lists `'INVALID_PROCESS'`; also add `'INVALID_STATUS'`, which the endpoint can return but the type omits.
+> - [mocks/handlers/lots.ts:32](../../frontend/src/mocks/handlers/lots.ts#L32) — the scan mock returns `INVALID_PROCESS`.
+> - [ScanTag.tsx:48-52](../../frontend/src/pages/Assembly/ScanTag.tsx#L48-L52) — shows the raw code. Add a readable message for `INVALID_PROCESS_ORDER` ("wrong order — scan the previous station first").
+>
+> `CompletedResult` ([types/api.ts:158](../../frontend/src/types/api.ts#L158)) keeps `INVALID_PROCESS`.
 
 **One guard-order change.** The reader SPs check `TAG_NOT_FOUND` before `INVALID_STATUS`; `completed` checks `INVALID_STATUS` first. The helper checks `INVALID_STATUS` first for all of them. The divergent case — an unknown tag scanned while the target master row is missing — cannot occur (those rows are seeded and FK-referenced), and both codes are silently skipped by the Python service. Note it in the commit message.
 
@@ -1434,7 +1487,15 @@ Verify with hardware if possible: register a lot, walk it past Reader 1 then Rea
 
 Replaces `completed` and `change_process`.
 
-**`completeLot` does not fit the `transition` helper** — it keys on `lot_no`, and it writes `tb_assy_tag` as well. Guard order: `INVALID_STATUS` (status 4 missing) → `LOT_NOT_FOUND` → `INVALID_PROCESS` (status != 3) → three writes.
+**`completeLot` does not fit the `transition` helper** — it keys on `lot_no`, and it writes `tb_assy_tag` as well. Guard order: `INVALID_STATUS` (status 4 missing) → `LOT_NOT_FOUND` → `INVALID_PROCESS` → three writes.
+
+> **2026-10-14 — the `INVALID_PROCESS` guard changed.** It is no longer `status_id != 3`. Since `alter_process_can_clear_tag.sql` it is: `status_id = 4` **or** the lot's status does not belong to a process with `can_clear_tag = 1`. Port that rule, not the old one.
+>
+> The Clear Tag page ([ClearTag.tsx:66-72](../../frontend/src/pages/Assembly/ClearTag.tsx#L66-L72), [:130-167](../../frontend/src/pages/Assembly/ClearTag.tsx#L130-L167)) now:
+> - checks `can_clear_tag` itself before posting — a copy of the server rule. Keep the server rule as the authority; the FE check is only for a fast message.
+> - lets the user pick a clearable process, but sends it **only inside `remark`** as `[FROM: <process_name>]`. The backend never sees a process id. If the audit trail needs "cleared from which process", add a `process_id` field to the request instead of parsing `remark`. See F8.
+> - shows the raw code for any non-`OK` result (`:162`). Add messages for `INVALID_PROCESS` and the new `NO_TAG_PAIRED`.
+> - never sends `machine_no`.
 
 > The SP detected `LOT_NOT_FOUND` by selecting `tag_id` and testing it for null — so a lot that exists **with a null `tag_id`** also returned `LOT_NOT_FOUND`. `tb_assy_lot.tag_id` is nullable, so this is reachable. Query for the lot row itself and distinguish the two: a missing row is `LOT_NOT_FOUND`; an existing row with no tag is a new `NO_TAG_PAIRED` code. Add it to the frozen-contract table when you do — the frontend needs a message for it, and the Python service ignores unknown non-`OK` codes.
 
@@ -1478,13 +1539,15 @@ Unit tests: every branch of both functions; the `CLEAR_FAILED` row is written fo
 
 Verify: Clear Tag page end to end, including a deliberate failure (clear a lot at status 1) and confirming the `CLEAR_FAILED` row appears. Then the admin override path, including an override to Completed followed by reusing that tag on a new lot.
 
+> **2026-10-14:** no page calls `POST /change-process` (grep of `frontend/src` is empty). The admin override exists only as a Bruno request (`bruno/AYT-RFID/Lot - Change Process.yml`). Verify it through Bruno. The Cutover table's "recover via admin Change Process" also means Bruno, not the UI. The "deliberate failure" step above cannot be done from the browser any more: the FE `can_clear_tag` check stops the request before it reaches the backend. Test that branch with Bruno too.
+
 ---
 
 ## Task 19: Fix D7 — reader config paths
 
 **Files:**
 - Create: `backend/services/readerConfigService.js`
-- Modify: `backend/routes/assembly.js:261`, `270`, `533`
+- Modify: `backend/routes/assembly.js:228`, `237`, `393` (line numbers as of 2026-10-14: `GET /readers-config`, `PUT /readers-config`, `GET /dashboard/locations`)
 
 `fs.readFileSync('../service/reader_config.json')` resolves against the process CWD, so the server only works when launched from `backend/`. Use `path.join(__dirname, '..', '..', 'service', 'reader_config.json')`.
 
@@ -1591,6 +1654,42 @@ Changes this refactor requires:
 - **§6 API Endpoints** — mark which return HTTP status codes vs `{result}`, per the contract boundary.
 - **§15** — note bcrypt hashing.
 - **SYSTEM_OVERVIEW.md** — the "Data written at each step" table still describes SP behaviour; update the Completed rows for the `CLEAR_FAILED` path.
+
+---
+
+## Frontend impact — Assembly pages (reviewed 2026-10-14)
+
+Every page in `frontend/src/pages/Assembly/`, the endpoints it calls, and where that endpoint goes. Use this table when the redesign reaches B7 (FE switch).
+
+| Page | Endpoint(s) | Contract | Old task | Redesign branch |
+|---|---|---|---|---|
+| `Register.tsx`, `RegisterSingle.tsx` | `GET /lot/:lot_no`, `POST /register-tag` | 404 / frozen `{result}` | 4, 16 | B2.4, B2.5 |
+| `ScanTag.tsx` | `POST /gauging-room-f1`, `/mc-gauging-f1` | frozen `{result}` | 17 | B3.2 |
+| `ClearTag.tsx` — Clear | `GET /status`, `/process`, `/lot-by-lot/:lot_no`, `/lot-by-tag/:tag_id`, `POST /completed` | CRUD / 404 / frozen | 6, 7, 16, 18 | B1, B5.1, B4.2 |
+| `ClearTag.tsx` — History | `GET /clear-tag/history` | list | 12 | B5.2 |
+| `Dashboard.tsx` | `GET /dashboard`, `/dashboard/process-summary`, `/dashboard/history`, `/dashboard/locations`, `/dashboard/daily-inventory` | list | 12, 13, 19 | B5.2, B5.4 |
+| `Management/StatusTab.tsx` | `/status` CRUD | CRUD | 6, 10 | B1.4 |
+| `Management/ProcessTab.tsx` | `/process` CRUD | CRUD | 7, 10 | B1.2 |
+| `Management/UserTab.tsx` | `/login/users` CRUD | CRUD | 8, 10 | B6 (deferred) |
+| `MockDone.tsx` | `/mock-done` list / add / delete | CRUD | 5, 10 | B4.1 |
+| `ReaderConfig.tsx` | `GET /status`, `/readers-config`, `/readers-status`, `PUT /readers-config`, `POST /readers-restart` | CRUD | 19 | not covered (roadmap O2) |
+| `dailyInventory.ts`, `processBreakdown.ts` | — (pure helpers, unit-tested) | — | — | B5.4 response shape must keep `inventory_qty` non-null |
+
+Any contract change also touches `frontend/src/types/api.ts` and `frontend/src/mocks/handlers/*` (mock mode must keep working), and the matching file in `bruno/AYT-RFID/`.
+
+### Findings
+
+| # | Finding | Where | Status |
+|---|---|---|---|
+| F1 | `can_clear_tag` is not read or written by `masterService` process functions. On the real backend the ProcessTab checkbox is lost on save, `GET /process` has no `can_clear_tag`, so Clear Tag's clearable list is always empty and **every clear is blocked in the UI**. Works only in mock mode. | `backend/services/masterService.js:36-56`; FE `ClearTag.tsx:69-70`, `ProcessTab.tsx:81-82` | [ ] Not started — fix now if the old backend must run before B1; else B1.2 covers it |
+| F2 | `search` on Clear Tag History is ignored by the route — SP has `@search`, route does not bind it. | `backend/routes/assembly.js:404-417` | [ ] Not started — same choice as F1; B5.2 covers it |
+| F3 | Management tabs show a **success** toast for SQL errors, because the backend returns `200 {result:'<SQL text>'}` and the tabs treat any 2xx as success. | `Management/*.tsx` (e.g. `ProcessTab.tsx:29-41`) | [-] DEFERRED — fixed by B0.2 error handler + B1 status codes. Resume in B7: show `err.response.data.message` in each `catch` |
+| F4 | `GET /dashboard/daily-inventory` has a page, a mock and a Bruno request, but no backend route. | `Dashboard.tsx:133`, `mocks/handlers/dashboard.ts:91` | [-] DEFERRED — B5.4 `/dashboard/inventory` must cover it. Resume: map its response to `DailyInventoryRow` |
+| F5 | `top5` / `Top5Row` still in type and mock; no page uses it. | `types/api.ts:55, 70`, `mocks/handlers/dashboard.ts:39, 64` | [-] DEFERRED — delete in B7 when `DashboardResponse` changes |
+| F6 | MockDone delete ignores the `NOT_FOUND` result added in Task 5; errors only go to `console.error`. | `MockDone.tsx:62-69` | [-] DEFERRED — B4.1 replaces mock-done; resume there |
+| F7 | D10 rename touches the FE too: `ScanResult` type, scan mock, ScanTag message. `ScanResult` also misses `INVALID_STATUS`. | `types/api.ts:159`, `mocks/handlers/lots.ts:32`, `ScanTag.tsx:48-52` | [-] DEFERRED — B3.2 defines new scan codes; resume in B7 |
+| F8 | Clear Tag sends the chosen process only inside `remark` text; no `process_id`, no `machine_no`. | `ClearTag.tsx:152-157` | [-] DEFERRED — decide in B4.2 whether manual clear takes `process_id` |
+| F9 | No page calls `POST /change-process`. Admin override is Bruno-only. | grep `frontend/src` | [-] DEFERRED — redesign B3.2 deletes `/change-process`; confirm no UI is wanted |
 
 ---
 

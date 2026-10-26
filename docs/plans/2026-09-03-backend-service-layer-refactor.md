@@ -6,7 +6,7 @@
 
 **Architecture:** Three layers — routes parse HTTP and shape responses, services own business logic and transactions, a thin `db.js` seam owns connection and parameter mechanics. Services receive their database dependency by injection so they can be unit-tested against a fake. Stored procedures are retired incrementally, lowest-risk group first; the state-transition SPs move last and only inside explicit transactions.
 
-**Tech Stack:** Node.js 18+, Express 5, `mssql`/`msnodesqlv8` (Windows Auth), `node:test` + `node:assert` (built-in), `bcryptjs`.
+**Tech Stack:** Node.js 18+, Express 5, `mssql` (SQL login, `encrypt: true` — see `backend/database.js`; the Windows Auth / `msnodesqlv8` setup was replaced after Task 1), `node:test` + `node:assert` (built-in), `bcryptjs`.
 
 **Status:** This is a development-stage system. Defects found during analysis are fixed, not preserved. See the Decisions Log.
 
@@ -16,6 +16,14 @@
 > - **Tasks 10–22 are superseded** by the backend redesign: spec `docs/superpowers/specs/2026-10-01-backend-redesign-design.md`, roadmap `docs/superpowers/plans/2026-10-01-backend-redesign-roadmap.md`. The old tables and SPs are already dropped from the dev DB, so those tasks have nothing left to port. Keep them as the record of *why* (D3–D11, FLAG-1, FLAG-2) — the redesign must not lose those fixes.
 > - **The frontend changed after this plan was written.** It is TypeScript now (`.tsx`), has a typed API contract (`frontend/src/types/api.ts`), a mock mode (`frontend/src/mocks/`), and new features (`can_clear_tag`, daily inventory, process breakdown). Every `.js` page path below now means the `.tsx` file. See [Frontend impact — Assembly pages](#frontend-impact--assembly-pages-reviewed-2026-10-14).
 > - **Line numbers in `backend/routes/assembly.js` are pre-Task-4** (557 lines then, 417 now). Find a route by its path, not its line.
+
+> **Review 2026-10-26 — plan closed.**
+>
+> - **Goal partly reached.** 17 of 27 live SPs moved to services (Tasks 4–9). The 10 SPs with the real logic (register, scan, clear, dashboard) are still called from `routes/assembly.js` — 11 `.execute()` call sites. They move in the redesign, not here.
+> - **The old backend does not run on the dev DB.** Tables and SPs were dropped (roadmap O1), so every route fails until redesign B1.1. "Each phase leaves the system working" no longer holds.
+> - **Process order is no longer a rule.** Redesign D5: last scan wins, any direction. Line 33 and D10 are replaced by it.
+> - **Only open item from this plan:** Task 19 (D7). Nothing in the redesign fixes it.
+> - **New gap found:** redesign B3.2 deletes the endpoints the Python reader calls. Tracked as roadmap O4.
 
 ---
 
@@ -32,10 +40,12 @@ status_id=1 bf_issue → status_id=2 gr_f1 → status_id=3 mc_f1 → status_id=4
 
 Order is enforced inside the stored procedures today. That enforcement is the system's only integrity guard and **must survive this refactor** — it moves into `processService`, it does not disappear.
 
+> **2026-10-26 — replaced.** Redesign D5 (spec `docs/superpowers/specs/2026-10-01-backend-redesign-design.md:58`) drops order enforcement on purpose: last scan wins, any direction. The integrity guard in the new schema is "one active pair per tag and per lot" (`UX_pairing_active_tag`, `UX_pairing_active_lot`, spec `:236-237`).
+
 ### Who calls the backend
 
 1. **React frontend** — `frontend/src/`, talks to `http://{server}:5001/api/assembly`. **It also calls the reader endpoints**: [ScanTag.tsx:42](../../frontend/src/pages/Assembly/ScanTag.tsx#L42) POSTs to `/gauging-room-f1` and `/mc-gauging-f1` (paths in [scanConfig.ts:5-6](../../frontend/src/config/scanConfig.ts#L5-L6)) as a manual scan screen. Any change to those codes must update ScanTag too (added 2026-10-14).
-2. **Python reader service** — `service/main_assy.py`, POSTs to `/gauging-room-f1` and `/mc-gauging-f1`. Runs as a Windows startup script on a 32-bit Python install on the OT network. **Its contract is frozen** — it is the one client that cannot be redeployed alongside the backend.
+2. **Python reader service** — `service/main_assy.py`, POSTs to `/gauging-room-f1` and `/mc-gauging-f1`. Runs as a Windows startup script on a 32-bit Python install on the OT network. **Its contract is frozen** — it is the one client that cannot be redeployed alongside the backend. **2026-10-26:** redesign B3.2 deletes both endpoints, and the spec puts the reader service out of scope. This breaks this client and ScanTag — see roadmap O4.
 3. **The backend's own polling loop** — [server.js:15-63](../../backend/server.js#L15-L63). Simulation code only; see D1.
 
 ### The tag-pairing requirement
@@ -102,7 +112,7 @@ Findings from analysis, with the decision taken for each. **These are fixes, not
 | D7 | Reader config paths are CWD-relative, so the server only runs from `backend/` | **Fix.** `path.join(__dirname, ...)`, extracted to a service | 19 |
 | D8 | Plaintext passwords | **Fix.** `bcryptjs` + a one-off rehash script | 9 |
 | D9 | CRUD endpoints return `200 {result: '<raw SQL error text>'}` | **Fix.** Real HTTP status codes for the CRUD family, with coordinated frontend changes | 10 |
-| D10 | The Python service branches on `INVALID_PROCESS_ORDER` ([main_assy.py:77](../../service/main_assy.py#L77)) but the SPs return `INVALID_PROCESS` — the branch is dead, and the wrong-order case logs `WARNING` instead of skipping silently | **Fix on the backend side.** Return `INVALID_PROCESS_ORDER`, matching the frozen client and README §1 | 17 |
+| D10 | The Python service branches on `INVALID_PROCESS_ORDER` ([main_assy.py:77](../../service/main_assy.py#L77)) but the SPs return `INVALID_PROCESS` — the branch is dead, and the wrong-order case logs `WARNING` instead of skipping silently | **Fix on the backend side.** Return `INVALID_PROCESS_ORDER`, matching the frozen client and README §1. **2026-10-26: obsolete** — redesign D5 drops order checks, so `POST /scans` has no wrong-order code | 17 |
 | D11 | Python drops a scan permanently if the backend is unreachable — no retry, and the cooldown is set before the POST | **Out of scope** (touches the frozen client). Drives the cutover rule instead: restart the backend only while the line is stopped | Cutover |
 
 ### Two flags carried forward
@@ -182,9 +192,9 @@ Stop at any phase boundary. Each leaves the system working.
 | 14 | Tag-pairing constraint (D4) | [-] DEFERRED — superseded by redesign B1.1 / B2.3. Resume: check the new schema keeps "one active pairing per tag" as a DB constraint |
 | 15 | Transition characterization tests | [-] DEFERRED — superseded; old SPs dropped |
 | 16 | `lotService` (D3, D4) | [-] DEFERRED — superseded by redesign B2.4 / B2.5 |
-| 17 | `processService` — transitions (D10) | [-] DEFERRED — superseded by redesign B3.2. Resume: D10 and F7 must hold for the new `POST /scans` |
+| 17 | `processService` — transitions (D10) | [-] DEFERRED — superseded by redesign B3.2. Resume: D10 does not apply (redesign D5, no order check). F7 still applies to the FE in B7. The Python client break is roadmap O4 |
 | 18 | `processService` — clear (FLAG-2) | [-] DEFERRED — superseded by redesign B4.2. Resume: carry FLAG-2, `NO_TAG_PAIRED` and F8 into B4.2 |
-| 19 | D7 reader config paths | [-] DEFERRED — not covered by redesign B0–B5 (reader routes stay, roadmap O2). Resume: still a live bug at `routes/assembly.js:228, 237, 393`; do it as a small task before the reader phase |
+| 19 | D7 reader config paths | [-] DEFERRED — not covered by redesign B0–B5 (reader routes stay, roadmap O2). Resume: still a live bug at `routes/assembly.js:228, 237, 393` (re-checked 2026-10-26); do it as a small task before the reader phase |
 | 20 | Indexes | [-] DEFERRED — superseded; new schema in B1.1 defines its own indexes |
 | 21 | Drop SPs | [-] DEFERRED — superseded; SPs already dropped from dev DB per redesign spec §1 |
 | 22 | Docs | [-] DEFERRED — superseded; redesign updates docs per branch |
@@ -258,6 +268,8 @@ const dbConfig = {
     options: { trustedConnection: true, trustServerCertificate: true },
 };
 ```
+
+> **2026-10-26:** this is the Task 1 version. `backend/database.js` now uses plain `mssql` with `DB_PORT`, `DB_USER`, `DB_PASSWORD` and `encrypt: true`. Read the file, not this block.
 
 Defaults preserve today's behaviour, so nothing breaks if `.env` is missing. Add to `backend/.env`:
 
@@ -889,6 +901,8 @@ Verify: log in as a known user; log in with a wrong password (401); Management �
 - Create: `backend/backup_DB_SP/alter_login_password_width.sql`
 
 `bcryptjs`, not `bcrypt` — the native build needs a compiler toolchain, and this machine already carries `msnodesqlv8` with `allowScripts` pinned. Do not add a second native dependency to a 32-bit-Python OT box. `bcryptjs` is pure JS and slower in a way that is irrelevant at this login volume.
+
+> **2026-10-26:** `msnodesqlv8` is no longer used. The choice still holds: `bcryptjs` needs no native build.
 
 **Step 1: Widen the column**
 
@@ -1681,13 +1695,13 @@ Any contract change also touches `frontend/src/types/api.ts` and `frontend/src/m
 
 | # | Finding | Where | Status |
 |---|---|---|---|
-| F1 | `can_clear_tag` is not read or written by `masterService` process functions. On the real backend the ProcessTab checkbox is lost on save, `GET /process` has no `can_clear_tag`, so Clear Tag's clearable list is always empty and **every clear is blocked in the UI**. Works only in mock mode. | `backend/services/masterService.js:36-56`; FE `ClearTag.tsx:69-70`, `ProcessTab.tsx:81-82` | [ ] Not started — fix now if the old backend must run before B1; else B1.2 covers it |
-| F2 | `search` on Clear Tag History is ignored by the route — SP has `@search`, route does not bind it. | `backend/routes/assembly.js:404-417` | [ ] Not started — same choice as F1; B5.2 covers it |
+| F1 | `can_clear_tag` is not read or written by `masterService` process functions. On the real backend the ProcessTab checkbox is lost on save, `GET /process` has no `can_clear_tag`, so Clear Tag's clearable list is always empty and **every clear is blocked in the UI**. Works only in mock mode. | `backend/services/masterService.js:36-56`; FE `ClearTag.tsx:69-70`, `ProcessTab.tsx:81-82` | [-] DEFERRED — the old backend cannot run (dev DB tables dropped, roadmap O1). Resume: B1.2 must read and write `can_clear_tag` |
+| F2 | `search` on Clear Tag History is ignored by the route — SP has `@search`, route does not bind it. | `backend/routes/assembly.js:404-417` | [-] DEFERRED — same reason as F1. Resume: B5.2 must support `search` on the clear history list |
 | F3 | Management tabs show a **success** toast for SQL errors, because the backend returns `200 {result:'<SQL text>'}` and the tabs treat any 2xx as success. | `Management/*.tsx` (e.g. `ProcessTab.tsx:29-41`) | [-] DEFERRED — fixed by B0.2 error handler + B1 status codes. Resume in B7: show `err.response.data.message` in each `catch` |
 | F4 | `GET /dashboard/daily-inventory` has a page, a mock and a Bruno request, but no backend route. | `Dashboard.tsx:133`, `mocks/handlers/dashboard.ts:91` | [-] DEFERRED — B5.4 `/dashboard/inventory` must cover it. Resume: map its response to `DailyInventoryRow` |
 | F5 | `top5` / `Top5Row` still in type and mock; no page uses it. | `types/api.ts:55, 70`, `mocks/handlers/dashboard.ts:39, 64` | [-] DEFERRED — delete in B7 when `DashboardResponse` changes |
 | F6 | MockDone delete ignores the `NOT_FOUND` result added in Task 5; errors only go to `console.error`. | `MockDone.tsx:62-69` | [-] DEFERRED — B4.1 replaces mock-done; resume there |
-| F7 | D10 rename touches the FE too: `ScanResult` type, scan mock, ScanTag message. `ScanResult` also misses `INVALID_STATUS`. | `types/api.ts:159`, `mocks/handlers/lots.ts:32`, `ScanTag.tsx:48-52` | [-] DEFERRED — B3.2 defines new scan codes; resume in B7 |
+| F7 | D10 rename touches the FE too: `ScanResult` type, scan mock, ScanTag message. `ScanResult` also misses `INVALID_STATUS`. | `types/api.ts:159`, `mocks/handlers/lots.ts:32`, `ScanTag.tsx:48-52` | [-] DEFERRED — the `INVALID_PROCESS_ORDER` rename is obsolete (redesign D5). Resume in B7: `ScanResult`, the scan mock and ScanTag move to the B3.2 outcomes (`MOVED` / `SEEN` / `UNKNOWN` / `ERROR`) |
 | F8 | Clear Tag sends the chosen process only inside `remark` text; no `process_id`, no `machine_no`. | `ClearTag.tsx:152-157` | [-] DEFERRED — decide in B4.2 whether manual clear takes `process_id` |
 | F9 | No page calls `POST /change-process`. Admin override is Bruno-only. | grep `frontend/src` | [-] DEFERRED — redesign B3.2 deletes `/change-process`; confirm no UI is wanted |
 
@@ -1755,3 +1769,17 @@ Every decision needed to start Phase 0 has been made. The two items below are **
 
 - **FLAG-1** (Task 13) — what the four dashboard summary cards should count. Recap with the user after Phase 4, when the numbers are internally consistent and the query is readable.
 - **FLAG-2** (Task 18) — whether automated sources should also write `CLEAR_FAILED` rows. Revisit if the audit trail turns out to need them; needs a dedupe rule and the log cleanup job first.
+
+---
+
+## Deferred and blocked — at close (2026-10-26)
+
+| Item | Mark | Goes to |
+|---|---|---|
+| Tasks 10–18, 20–22 | [-] DEFERRED | Superseded by the redesign — see [Task status](#task-status-reviewed-2026-10-14) |
+| Task 19 (D7) | [-] DEFERRED | Small task of its own; not covered by the redesign |
+| F1, F2 | [-] DEFERRED | B1.2, B5.2 |
+| F3–F9 | [-] DEFERRED | B4, B5, B7 — see [Findings](#findings) |
+| Python reader break | [ ] Open | Roadmap O4, decide before B3.2 |
+
+No item is BLOCKED.

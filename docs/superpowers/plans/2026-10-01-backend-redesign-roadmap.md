@@ -26,7 +26,7 @@
 | # | Task | Main files | Model / effort / where | Status |
 | --- | --- | --- | --- | --- |
 | B0.1 | Lazy DB pool: no connection at `require` time, retry after a failed connect | `database.js`, `db.js`, `routes/assembly.js`, `scripts/rehash_passwords.js` | Sonnet 5, medium | [x] `database.js:15` `getPool`/`createPoolGetter`; callers switched; 3 new + 33 total unit tests pass |
-| B0.2 | `AppError` + central error handler | `shared/AppError.js`, `shared/errorHandler.js` | Sonnet 5, medium | [ ] |
+| B0.2 | `AppError` + central error handler | `shared/AppError.js`, `shared/errorHandler.js` | Sonnet 5, medium | [x] `shared/errorHandler.js:11`; 7 new + 40 total unit tests pass |
 | B0.3 | `validate()` (zod) + `sqlErrors` | `shared/validate.js`, `shared/sqlErrors.js`, `package.json` | Sonnet 5, medium | [ ] |
 | B0.4 | `app.js` / `server.js` split, old polling removed, JSON 404, HTTP test helper | `app.js`, `server.js`, `test/helpers/startApp.js` | Sonnet 5, medium | [ ] |
 

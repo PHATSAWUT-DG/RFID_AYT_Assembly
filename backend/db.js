@@ -1,4 +1,4 @@
-const { sql, poolPromise } = require('./database');
+const { sql, getPool } = require('./database');
 
 // Params are a plain object; types are inferred unless wrapped with typed(),
 // which is required for DATE columns receiving a string.
@@ -21,14 +21,14 @@ const bind = (request, params) => {
 };
 
 const query = async (text, params = {}) => {
-    const pool = await poolPromise;
+    const pool = await getPool();
     return bind(pool.request(), params).query(text);
 };
 
 // Runs fn inside one transaction. fn receives a db-shaped object whose query()
 // runs on the transaction, so services need no transaction awareness.
 const transaction = async (fn) => {
-    const pool = await poolPromise;
+    const pool = await getPool();
     const tx = new sql.Transaction(pool);
     await tx.begin();
     try {

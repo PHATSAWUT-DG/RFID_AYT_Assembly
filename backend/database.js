@@ -12,14 +12,22 @@ const dbConfig = {
     }
 };
 
-const poolPromise = new sql.ConnectionPool(dbConfig)
-    .connect()
-    .then(pool => {
-        //console.log('Connected database successfully!');
-        return pool;
-    })
-    .catch(err => {
-        console.error('Connection error:', err);
-    });
+// Connect on first use, not at require time, so loading this module (e.g. in
+// unit tests) never opens a DB connection. A failed connect is not cached:
+// the next call tries again.
+function createPoolGetter({ ConnectionPool = sql.ConnectionPool, config }) {
+    let poolPromise = null;
+    return function getPool() {
+        if (!poolPromise) {
+            poolPromise = new ConnectionPool(config).connect().catch((err) => {
+                poolPromise = null;
+                throw err;
+            });
+        }
+        return poolPromise;
+    };
+}
 
-module.exports = { sql, poolPromise };
+const getPool = createPoolGetter({ config: dbConfig });
+
+module.exports = { sql, getPool, createPoolGetter };

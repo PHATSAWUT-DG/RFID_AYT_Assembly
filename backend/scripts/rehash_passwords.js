@@ -3,12 +3,12 @@
 //   cd backend && node scripts/rehash_passwords.js
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
-const { poolPromise, sql } = require('../database');
+const { getPool, sql } = require('../database');
 
 const ALREADY_HASHED = /^\$2[aby]\$/;
 
 async function main() {
-    const pool = await poolPromise;
+    const pool = await getPool();
     const { recordset: rows } = await pool.request()
         .query('SELECT id, password FROM tb_assy_login');
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs');
-const { sql, poolPromise } = require('../database');
+const { sql, getPool } = require('../database');
 const axios = require('axios');
 const db = require('../db');
 const { insertApiLog } = require('../services/apiLogService');
@@ -64,7 +64,7 @@ router.get('/lot/:lot_no', async (req, res) => {
 // ดึงข้อมูล lot จาก tag_id
 router.get('/lot-by-tag/:tag_id', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('tag_id', sql.VarChar, req.params.tag_id)
             .input('lot_no', sql.VarChar, null)
@@ -80,7 +80,7 @@ router.get('/lot-by-tag/:tag_id', async (req, res) => {
 // ดึงจาก lot_no
 router.get('/lot-by-lot/:lot_no', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('tag_id', sql.VarChar, null)
             .input('lot_no', sql.VarChar, req.params.lot_no)
@@ -98,7 +98,7 @@ router.get('/lot-by-lot/:lot_no', async (req, res) => {
 router.post('/register-tag', async (req, res) => {
     try {
         const { tag_id, lot_no, wos, brg_type, spec, qty, location_name } = req.body;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('lot_no', sql.VarChar, lot_no)
             .input('wos', sql.VarChar, wos)
@@ -118,7 +118,7 @@ router.post('/register-tag', async (req, res) => {
 router.post('/gauging-room-f1', async (req, res) => {
     try {
         const { tag_id, location_name } = req.body;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('tag_id', sql.VarChar, tag_id)
             .input('location_name', sql.VarChar, location_name || null)
@@ -133,7 +133,7 @@ router.post('/gauging-room-f1', async (req, res) => {
 router.post('/mc-gauging-f1', async (req, res) => {
     try {
         const { tag_id, location_name } = req.body;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('tag_id', sql.VarChar, tag_id)
             .input('location_name', sql.VarChar, location_name || null)
@@ -148,7 +148,7 @@ router.post('/mc-gauging-f1', async (req, res) => {
 router.post('/change-process', async (req, res) => {
     try {
         const { tag_id, status_id, location_name, remark, emp_id } = req.body;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('tag_id', sql.VarChar, tag_id)
             .input('status_id', sql.Int, status_id)
@@ -166,7 +166,7 @@ router.post('/change-process', async (req, res) => {
 router.post('/completed', async (req, res) => {
     try {
         const { lot_no, remark, emp_id, machine_no } = req.body;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('lot_no', sql.VarChar, lot_no)
             .input('remark', sql.VarChar, remark || null)
@@ -183,7 +183,7 @@ router.post('/completed', async (req, res) => {
 // router.post('/in-assy', async (req, res) => {
 //     try {
 //         const { tag_id } = req.body;
-//         const pool = await poolPromise;
+//         const pool = await getPool();
 //         const result = await pool.request()
 //             .input('tag_id', sql.VarChar, tag_id)
 //             .execute('Stored_tb_assy_in_assy');
@@ -196,7 +196,7 @@ router.post('/completed', async (req, res) => {
 // router.post('/wip-gauging', async (req, res) => {
 //     try {
 //         const { tag_id } = req.body;
-//         const pool = await poolPromise;
+//         const pool = await getPool();
 //         const result = await pool.request()
 //             .input('tag_id', sql.VarChar, tag_id)
 //             .execute('Stored_tb_assy_wip_gauging');
@@ -339,7 +339,7 @@ router.delete('/process/:id', async (req, res) => {
 router.get('/dashboard', async (req, res) => {
     try {
         const { date_from, date_to, brg_type, wos, lot_no, status_id } = req.query;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('date_from', sql.Date, date_from || null)
             .input('date_to', sql.Date, date_to || null)
@@ -361,7 +361,7 @@ router.get('/dashboard', async (req, res) => {
 router.get('/dashboard/history', async (req, res) => {
     try {
         const { date_from, date_to, brg_type, wos, lot_no, status_id, location_name } = req.query;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('date_from', sql.Date, date_from || null)
             .input('date_to', sql.Date, date_to || null)
@@ -379,7 +379,7 @@ router.get('/dashboard/history', async (req, res) => {
 
 router.get('/dashboard/process-summary', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .execute('Stored_tb_assy_dashboard_process_summary');
         res.json(result.recordset);
@@ -404,7 +404,7 @@ router.get('/dashboard/locations', async (req, res) => {
 router.get('/clear-tag/history', async (req, res) => {
     try {
         const { date_from, date_to } = req.query;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('date_from', sql.Date, date_from || null)
             .input('date_to',   sql.Date, date_to   || null)

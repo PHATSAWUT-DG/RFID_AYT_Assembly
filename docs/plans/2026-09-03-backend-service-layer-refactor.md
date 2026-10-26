@@ -1780,6 +1780,6 @@ Every decision needed to start Phase 0 has been made. The two items below are **
 | Task 19 (D7) | [-] DEFERRED | Small task of its own; not covered by the redesign |
 | F1, F2 | [-] DEFERRED | B1.2, B5.2 |
 | F3–F9 | [-] DEFERRED | B4, B5, B7 — see [Findings](#findings) |
-| Python reader break | [ ] Open | Roadmap O4, decide before B3.2 |
+| Python reader break | [x] Decided | Roadmap O4 → no adapter; accepted until the reader service phase (not launched) |
 
 No item is BLOCKED.

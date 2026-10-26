@@ -21,7 +21,7 @@ Context: the old flow never ran in production. Old tables and SPs are already dr
 ### Out of scope (this spec)
 
 - Roles / auth. `emp_id` comes from the request body (see Risks R1).
-- Reader service (the program that talks to the RFID readers). We only define the scan endpoint it will call.
+- Reader service (the program that talks to the RFID readers). We only define the scan endpoint it will call. The current `service/main_assy.py` calls the old endpoints, so it stops working at B3.2. That is accepted: the system is not launched. It is replaced in the reader service phase.
 - Frontend changes. FE moves to the new API in B7. Until then, FE runs in mock mode.
 - Users / login / API log refactor into the new layers (B6).
 
@@ -55,7 +55,7 @@ All confirmed with you.
 | D2 | Status belongs to the **lot** (where the lot is). The pairing only says which tag carries the lot, and when. Every status change writes an event row. |
 | D3 | Stage 1 "before register" is virtual. No row in our DB. |
 | D4 | One location belongs to exactly one process. |
-| D5 | Scan rule: **last scan wins**. Going back (4 → 3) is allowed. `seq` is display order only. |
+| D5 | Scan rule: **last scan wins**. Going back (4 → 3) is allowed. `seq` sets display order and the normal scan order (D22). |
 | D6 | Duplicate read (same location as the lot's current status) → no event, only update `tb_assy_lot.last_seen_at`. |
 | D7 | Auto clear gate = external done API by `lot_no`. Found → clear. No status precondition. |
 | D8 | Clear has two triggers: scheduled job (auto) and Clear Tag page (manual). |
@@ -72,6 +72,7 @@ All confirmed with you.
 | D19 | No `is_terminal` flag. `CLEARED` is the only closing status; code finds it by its code. Adding `CANCELLED` later needs a code change anyway (R8). |
 | D20 | Invariant: lot status ≠ `CLEARED` **if and only if** the lot has an active pairing. Only `moveStatus` writes lot status and closes pairings, so both change together. |
 | D21 | `tb_assy_api_log` stays. The lot table keeps only the latest mapped data; the log keeps every call (raw response, HTTP status, error, duration) for all three upstream APIs. |
+| D22 | **Abnormal scan** (added 2026-10-26). A `SCANNED` move is abnormal when its target is not the next active status after the lot's current one, ordered by `seq` (`CLEARED` excluded). This covers a forward skip (`REGISTERED` → `MC_F1`) and every backward move (`MC_F1` → `GR_F1`). The lot still moves (D5). The event gets `is_abnormal = 1`, and the FE shows a toast. `PAIRED` and `CLEARED` events are never abnormal. A duplicate read (D6) writes no event, so it is never abnormal. |
 | P2 | Table names keep the `tb_assy_` / `tb_master_` prefix. Old tables are already dropped, so the names are free. |
 | P3 | API base stays `/api/assembly` with new resource paths. No `/v2`. |
 | P4 | Feature folders: `modules/<feature>/{routes,controller,service,repository,schemas}.js`. |
@@ -168,7 +169,7 @@ Seed (all process `1500`):
 | id | INT IDENTITY | PK |
 | status_code | VARCHAR(30) | NOT NULL, UNIQUE. Code refers to statuses by code, never by id. |
 | status_label | VARCHAR(50) | NOT NULL |
-| seq | INT | NOT NULL. Display order only (D5). |
+| seq | INT | NOT NULL. Display order and normal scan order (D5, D22). |
 | location_id | INT NULL | FK → `tb_master_location.id`. Filtered UNIQUE `WHERE location_id IS NOT NULL` (one status per location). |
 
 CHECK: `(status_code = 'CLEARED' AND location_id IS NULL) OR (status_code <> 'CLEARED' AND location_id IS NOT NULL)`.
@@ -252,9 +253,10 @@ Rule (D20): `closed_at` is set **if and only if** the lot moves to `CLEARED`. `m
 | source | VARCHAR(10) | NOT NULL. CHECK in (`web`, `reader`, `job`) |
 | emp_id | VARCHAR(10) | NULL. NULL for `reader` and `job`. |
 | remark | VARCHAR(255) | NULL. Required for manual clear (service rule). |
+| is_abnormal | BIT | NOT NULL, default 0. Set by scan only (D22). |
 | created_at | DATETIME2(3) | NOT NULL, default `SYSDATETIME()` |
 
-Indexes: `IX_event_pairing (pairing_id, created_at)`, `IX_event_created (created_at) INCLUDE (event_type, to_status_id)`.
+Indexes: `IX_event_pairing (pairing_id, created_at)`, `IX_event_created (created_at) INCLUDE (event_type, to_status_id, is_abnormal)`.
 No UPDATE or DELETE on this table, ever.
 
 #### `tb_assy_unknown_read` (P6)
@@ -330,7 +332,7 @@ Rules:
 
 - **Dependency injection**: `createPairingService({ db, repo, as400Client, doneClient })`. Unit tests pass fakes.
 - **Express 5**: rejected promises reach the error handler on their own. No `asyncHandler` wrapper.
-- **One writer for state**: only `pairingRepository.moveStatus(txDb, { lotId, pairingId, fromStatusId, toStatus, eventType, locationId, source, empId, remark })` does all three, in the given transaction:
+- **One writer for state**: only `pairingRepository.moveStatus(txDb, { lotId, pairingId, fromStatusId, toStatus, eventType, locationId, source, empId, remark, isAbnormal = false })` does all three, in the given transaction:
   1. Updates `tb_assy_lot.status_id` + `status_updated_at`.
   2. If `toStatus` is `CLEARED`: sets the pairing's `closed_at` / `closed_by` (D20).
   3. Inserts the event.
@@ -384,9 +386,9 @@ Batch, because one reader cycle sees many tags, and 60+ readers are planned (com
 3. Remove duplicate codes in the batch. Then for each tag code, **its own transaction**:
    - Find the active pairing by tag code, then lock its lot. None → upsert unknown read → outcome `UNKNOWN`.
    - `lot.status_id == location status` → update `lot.last_seen_at` → outcome `SEEN` (D6).
-   - Else → `moveStatus` to the location status, event `SCANNED`, `source = reader`, set `lot.last_seen_at` → outcome `MOVED` (D5, any direction).
+   - Else → `moveStatus` to the location status, event `SCANNED`, `source = reader`, set `lot.last_seen_at` → outcome `MOVED` (D5, any direction). The service sets `isAbnormal` by the D22 rule; it is a pure function of the status list, the current status and the target status, unit-tested for: next status (normal), forward skip, backward move, move from the last active status.
    - Any error on one tag → outcome `ERROR` with code. Other tags go on.
-4. 200 `{ location_code, results: [{ tag_code, outcome, lot_no?, from_status?, to_status?, error? }] }`
+4. 200 `{ location_code, results: [{ tag_code, outcome, lot_no?, from_status?, to_status?, abnormal?, error? }] }`. `abnormal` is set only on `MOVED`.
 
 ### 7.5 Clear — B4
 
@@ -435,7 +437,7 @@ No done API call (D17). `remark` is required (1–255 chars).
 | `GET /lots/:lot_no/journey` | Flat timeline of all events of the lot (all its pairings), `ORDER BY created_at ASC, id ASC`. Each row: `created_at`, `event_type`, `from_status`, `to_status`, `location_code`, `tag_code`, `source`, `emp_id`, `remark`. Lot not in our DB → 404 `LOT_NOT_REGISTERED`. |
 | `GET /tags/:tag_code` | Tag + active pairing with lot. Replaces `lot-by-tag`. |
 | `GET /lots` | Current-state list. Filters: `status`, `process`, `q` (lot / tag / WOS / brg_type), `active` (default true = status ≠ `CLEARED`), `page`, `page_size` (default 50, max 200) |
-| `GET /events` | Event history. Filters: `from`, `to`, `event_type`, `source`, `location`, `q` (lot / tag / emp / brg_type), `page`, `page_size`. The Clear Tag history tab = `event_type=CLEARED`. |
+| `GET /events` | Event history. Filters: `from`, `to`, `event_type`, `source`, `location`, `abnormal`, `q` (lot / tag / emp / brg_type), `page`, `page_size`. Each row carries `is_abnormal`. The Clear Tag history tab = `event_type=CLEARED`. The abnormal toast (D22) polls `abnormal=true&from=<last check>`. |
 | `GET /unknown-reads` | Unknown reads. Filter: `location`. |
 | `GET /dashboard/summary` | Lot count + qty per status (from `tb_assy_lot`, no pairing join) |
 | `GET /dashboard/by-process` | Active qty per process (status → location → process) |

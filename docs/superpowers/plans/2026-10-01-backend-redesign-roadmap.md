@@ -17,7 +17,7 @@
 | B4 Clear | written when B3 is done | [ ] |
 | B5 Query / dashboard | written when B4 is done | [ ] |
 | B6 Existing modules | — | [-] DEFERRED — own spec after B0; resume: short spec for users / login / API log in the new layers |
-| B7 FE switch | — | [-] DEFERRED — FE work after B5; resume: FE plan that moves screens to the new endpoints |
+| B7 FE switch | — | [-] DEFERRED — FE work after B5; resume: FE plan that moves screens to the new endpoints, plus the abnormal-scan toast (spec D22, poll `GET /events?abnormal=true`) |
 
 ---
 
@@ -60,7 +60,7 @@ Where: B2.1–B2.2 new session (Sonnet 5). B2.3–B2.4 main session (Opus, concu
 | # | Task | Main files | Model / effort / where | Status |
 | --- | --- | --- | --- | --- |
 | B3.1 | Unknown read upsert (UPDATE → INSERT → retry on 2601/2627) | `modules/scan/repository.js` | Sonnet 5, medium | [ ] |
-| B3.2 | `scanService` + `POST /scans` (per-tag transaction, MOVED / SEEN / UNKNOWN / ERROR) + Bruno. Delete old `/gauging-room-f1`, `/mc-gauging-f1`, `/change-process`. | `modules/scan/*` | Sonnet 5, high | [ ] |
+| B3.2 | `scanService` + `POST /scans` (per-tag transaction, MOVED / SEEN / UNKNOWN / ERROR, abnormal flag per spec D22) + Bruno. Delete old `/gauging-room-f1`, `/mc-gauging-f1`, `/change-process`. `service/main_assy.py` stops working here (O4). | `modules/scan/*` | Sonnet 5, high | [ ] |
 
 Where: one new session (Sonnet 5, high).
 
@@ -94,4 +94,5 @@ Where: one new session (Sonnet 5, medium) for all of B5.
 | O1 | You dropped all tables, so `tb_assy_login` and `tb_assy_api_log` are gone too. Login is broken until it is recreated. Proposal: the B1.1 script also recreates `tb_assy_api_log` and the two mock tables (B2 / B4 need them); `tb_assy_login` is recreated in the same script with its old columns, so login works again before B6. | B1.1 | [ ] |
 | O2 | Spec section 2 says `routes/assembly.js` is empty after B5. It is not: the reader routes (`/readers-*`) and login / users stay until the reader phase and B6. Update the spec line at B5. | B5 | [ ] |
 | O3 | Spec section 9 gets a new code `ROUTE_NOT_FOUND` (404) in B0.4, so old FE calls get JSON, not an HTML page (R7). | B0.4 | [ ] |
-| O4 | B3.2 deletes `/gauging-room-f1` and `/mc-gauging-f1`. The running Python reader (`service/main_assy.py`) and `ScanTag.tsx` call them, and spec section 1 puts the reader service out of scope. After B3.2 no scan moves a lot. Decide: keep the old endpoints as adapters over `scanService`, or ship the new reader service with B3. | Before B3.2 | [ ] |
+| O4 | B3.2 deletes `/gauging-room-f1` and `/mc-gauging-f1`. The running Python reader (`service/main_assy.py`) and `ScanTag.tsx` call them, and spec section 1 puts the reader service out of scope. After B3.2 no scan moves a lot. Decide: keep the old endpoints as adapters over `scanService`, or ship the new reader service with B3. | Before B3.2 | [x] Decided 2026-10-26: no adapter. The system is not launched, so B3.2 deletes the old endpoints and `main_assy.py` stays broken until the reader service phase (spec section 1) |
+| O5 | D5 lets a scan skip a stage or go back. Users must see it. | B3.2, B5.2, B7 | [x] Decided 2026-10-26: spec D22. The event is flagged `is_abnormal`, `GET /events` filters on it, and the FE shows a toast (B7) |

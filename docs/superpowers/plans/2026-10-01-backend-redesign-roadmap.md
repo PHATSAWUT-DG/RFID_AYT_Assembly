@@ -28,7 +28,7 @@
 | B0.1 | Lazy DB pool: no connection at `require` time, retry after a failed connect | `database.js`, `db.js`, `routes/assembly.js`, `scripts/rehash_passwords.js` | Sonnet 5, medium | [x] `database.js:15` `getPool`/`createPoolGetter`; callers switched; 3 new + 33 total unit tests pass |
 | B0.2 | `AppError` + central error handler | `shared/AppError.js`, `shared/errorHandler.js` | Sonnet 5, medium | [x] `shared/errorHandler.js:11`; 7 new + 40 total unit tests pass |
 | B0.3 | `validate()` (zod) + `sqlErrors` | `shared/validate.js`, `shared/sqlErrors.js`, `package.json` | Sonnet 5, medium | [x] `shared/validate.js:8`, `shared/sqlErrors.js:6`; 8 new + 48 total unit tests pass |
-| B0.4 | `app.js` / `server.js` split, old polling removed, JSON 404, HTTP test helper | `app.js`, `server.js`, `test/helpers/startApp.js` | Sonnet 5, medium | [ ] |
+| B0.4 | `app.js` / `server.js` split, old polling removed, JSON 404, HTTP test helper | `app.js`, `server.js`, `test/helpers/startApp.js` | Sonnet 5, medium | [~] code done (`app.js:6`, `server.js`); 6 new + 54 total unit tests pass; user smoke test of `node server.js` pending |
 
 Where: one **new session (Sonnet 5, medium)** for B0.1–B0.4. Handoff: "Execute `docs/superpowers/plans/2026-10-01-b0-foundation.md` with `superpowers:executing-plans`, inline, one task at a time, wait for my review after each."
 
@@ -95,6 +95,6 @@ Where: one new session (Sonnet 5, medium) for all of B5.
 | --- | --- | --- | --- |
 | O1 | You dropped all tables, so `tb_assy_login` and `tb_assy_api_log` are gone too. Login is broken until it is recreated. Proposal: the B1.1 script also recreates `tb_assy_api_log` and the two mock tables (B2 / B4 need them); `tb_assy_login` is recreated in the same script with its old columns, so login works again before B6. | B1.1 | [ ] |
 | O2 | Spec section 2 says `routes/assembly.js` is empty after B5. It is not: the reader routes (`/readers-*`) and login / users stay until the reader phase and B6. Update the spec line at B5. | B5 | [ ] |
-| O3 | Spec section 9 gets a new code `ROUTE_NOT_FOUND` (404) in B0.4, so old FE calls get JSON, not an HTML page (R7). | B0.4 | [ ] |
+| O3 | Spec section 9 gets a new code `ROUTE_NOT_FOUND` (404) in B0.4, so old FE calls get JSON, not an HTML page (R7). | B0.4 | [x] added to spec section 9 table (`design.md:553`) |
 | O4 | B3.2 deletes `/gauging-room-f1` and `/mc-gauging-f1`. The running Python reader (`service/main_assy.py`) and `ScanTag.tsx` call them, and spec section 1 puts the reader service out of scope. After B3.2 no scan moves a lot. Decide: keep the old endpoints as adapters over `scanService`, or ship the new reader service with B3. | Before B3.2 | [x] Decided 2026-10-26: no adapter. The system is not launched, so B3.2 deletes the old endpoints and `main_assy.py` stays broken until the reader service phase (spec section 1) |
 | O5 | D5 lets a scan skip a stage or go back. Users must see it. | B3.2, B3.3, B7 | [x] Decided 2026-10-26: spec D22. The event is flagged `is_abnormal`, the BE pushes it over SSE (B3.3, spec 7.10), and the FE shows a toast (B7) |

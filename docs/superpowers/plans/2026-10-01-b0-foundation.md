@@ -59,7 +59,7 @@
 | 1 | Lazy DB pool | Sonnet 5, medium | [x] `database.js:15` lazy `getPool`; callers in `db.js`, `routes/assembly.js`, `scripts/rehash_passwords.js`; test `test/unit/database.test.js` (3/3), `npm test` 33/33 |
 | 2 | `AppError` + error handler | Sonnet 5, medium | [x] `shared/AppError.js`, `shared/errorHandler.js`; test `test/unit/shared/errorHandler.test.js` (7/7), `npm test` 40/40 |
 | 3 | `validate` (zod) + `sqlErrors` | Sonnet 5, medium | [x] `shared/validate.js`, `shared/sqlErrors.js`, zod `^4.6.7` in `package.json:20`; tests 8/8, `npm test` 48/48 |
-| 4 | `app.js` / `server.js` split + JSON 404 + `startApp` helper | Sonnet 5, medium | [ ] |
+| 4 | `app.js` / `server.js` split + JSON 404 + `startApp` helper | Sonnet 5, medium | [~] code done: `app.js`, `server.js`, `test/helpers/startApp.js`, `test/unit/app.test.js` (6/6), `npm test` 54/54, spec row added. Step 8 smoke test (user runs `node server.js`) pending |
 
 Where: one new session (Sonnet 5, medium) for all four tasks.
 

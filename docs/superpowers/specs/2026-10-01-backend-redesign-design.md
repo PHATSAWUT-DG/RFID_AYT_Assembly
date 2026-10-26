@@ -550,6 +550,7 @@ Body: `{ "error": "<CODE>", "message": "<text>", "details"?: {...} }`. Same `err
 | `LOT_NOT_REGISTERED` | 404 | Lot not in our DB |
 | `TAG_NOT_FOUND` | 404 | Tag not in our DB |
 | `LOCATION_NOT_FOUND` | 404 | Unknown or inactive location |
+| `ROUTE_NOT_FOUND` | 404 | No route matches under `/api/assembly` (e.g. FE still calls an old route, R7) |
 | `TAG_IN_USE` | 409 | Tag has an active pair |
 | `LOT_ALREADY_PAIRED` | 409 | Lot has an active pair |
 | `TAG_INACTIVE` | 409 | Pair with a retired tag |

@@ -17,7 +17,7 @@
 | B4 Clear | written when B3 is done | [ ] |
 | B5 Query / dashboard | written when B4 is done | [ ] |
 | B6 Existing modules | — | [-] DEFERRED — own spec after B0; resume: short spec for users / login / API log in the new layers |
-| B7 FE switch | — | [-] DEFERRED — FE work after B5; resume: FE plan that moves screens to the new endpoints, plus the abnormal-scan toast (spec D22, poll `GET /events?abnormal=true`) |
+| B7 FE switch | — | [-] DEFERRED — FE work after B5; resume: FE plan that moves screens to the new endpoints, plus the abnormal-scan toast from `EventSource` on `GET /events/stream` (spec D22, 7.10), mounted once in the layout; dashboard reloads on `lots.changed` (1 s debounce, reload on reconnect) and the 3-minute polling in `Dashboard.tsx` is removed; mock mode needs an SSE mock |
 
 ---
 
@@ -61,16 +61,18 @@ Where: B2.1–B2.2 new session (Sonnet 5). B2.3–B2.4 main session (Opus, concu
 | --- | --- | --- | --- | --- |
 | B3.1 | Unknown read upsert (UPDATE → INSERT → retry on 2601/2627) | `modules/scan/repository.js` | Sonnet 5, medium | [ ] |
 | B3.2 | `scanService` + `POST /scans` (per-tag transaction, MOVED / SEEN / UNKNOWN / ERROR, abnormal flag per spec D22) + Bruno. Delete old `/gauging-room-f1`, `/mc-gauging-f1`, `/change-process`. `service/main_assy.py` stops working here (O4). | `modules/scan/*` | Sonnet 5, high | [ ] |
+| B3.3 | Live events: `shared/eventBus.js`, `GET /events/stream` (SSE, spec 7.10: publish after commit, `Last-Event-ID` backfill, ping, clean-up) + Bruno. `scanService` publishes `scan.abnormal` and one `lots.changed` per batch; `pairingService.pair` publishes `lots.changed`. | `shared/eventBus.js`, `modules/events/*`, `modules/scan/service.js` | Sonnet 5, high | [ ] |
+| B3.4 | Mock reader: `service/mock_reader.py` posts fake scans to `POST /scans` from scenarios (normal move, forward skip, backward move, duplicate read, unknown tag). Replaces `main_assy.py` for dev until the reader service phase. + runbook `docs/runbooks/mock-reader.md` | `service/mock_reader.py` | Sonnet 5, medium | [ ] |
 
-Where: one new session (Sonnet 5, high).
+Where: one new session (Sonnet 5, high) for B3.1–B3.3. B3.4 in a new session (Sonnet 5, medium).
 
 ## B4 Clear
 
 | # | Task | Main files | Model / effort / where | Status |
 | --- | --- | --- | --- | --- |
 | B4.1 | `doneClient.isLotDone` + mock done routes (lookup + list / add / delete). Replaces `services/mockService.js` and old `/mock-done` handlers. + Bruno | `clients/doneClient.js`, `modules/mock/*` | Sonnet 5, medium | [ ] |
-| B4.2 | `pairingService.autoClear` + `manualClear` + `POST /lots/:lot_no/clear` + Bruno. Delete old `/completed`. | `modules/pairing/*` | Opus 5.5, high | [ ] |
-| B4.3 | `autoClearJob` (overlap guard, concurrency, summary log) + wiring in `server.js` + runbook `docs/runbooks/auto-clear-job.md` | `jobs/autoClearJob.js` | Sonnet 5, high | [ ] |
+| B4.2 | `pairingService.autoClear` + `manualClear` + `POST /lots/:lot_no/clear` + Bruno. Delete old `/completed`. Manual clear publishes `lots.changed` after commit (spec 7.10). | `modules/pairing/*` | Opus 5.5, high | [ ] |
+| B4.3 | `autoClearJob` (overlap guard, concurrency, summary log, one `lots.changed` per run with at least one clear) + wiring in `server.js` + runbook `docs/runbooks/auto-clear-job.md` | `jobs/autoClearJob.js` | Sonnet 5, high | [ ] |
 
 Where: B4.1 new session (Sonnet 5). B4.2–B4.3 main session (Opus; concurrency and job).
 
@@ -95,4 +97,4 @@ Where: one new session (Sonnet 5, medium) for all of B5.
 | O2 | Spec section 2 says `routes/assembly.js` is empty after B5. It is not: the reader routes (`/readers-*`) and login / users stay until the reader phase and B6. Update the spec line at B5. | B5 | [ ] |
 | O3 | Spec section 9 gets a new code `ROUTE_NOT_FOUND` (404) in B0.4, so old FE calls get JSON, not an HTML page (R7). | B0.4 | [ ] |
 | O4 | B3.2 deletes `/gauging-room-f1` and `/mc-gauging-f1`. The running Python reader (`service/main_assy.py`) and `ScanTag.tsx` call them, and spec section 1 puts the reader service out of scope. After B3.2 no scan moves a lot. Decide: keep the old endpoints as adapters over `scanService`, or ship the new reader service with B3. | Before B3.2 | [x] Decided 2026-10-26: no adapter. The system is not launched, so B3.2 deletes the old endpoints and `main_assy.py` stays broken until the reader service phase (spec section 1) |
-| O5 | D5 lets a scan skip a stage or go back. Users must see it. | B3.2, B5.2, B7 | [x] Decided 2026-10-26: spec D22. The event is flagged `is_abnormal`, `GET /events` filters on it, and the FE shows a toast (B7) |
+| O5 | D5 lets a scan skip a stage or go back. Users must see it. | B3.2, B3.3, B7 | [x] Decided 2026-10-26: spec D22. The event is flagged `is_abnormal`, the BE pushes it over SSE (B3.3, spec 7.10), and the FE shows a toast (B7) |

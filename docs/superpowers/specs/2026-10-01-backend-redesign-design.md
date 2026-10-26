@@ -21,7 +21,7 @@ Context: the old flow never ran in production. Old tables and SPs are already dr
 ### Out of scope (this spec)
 
 - Roles / auth. `emp_id` comes from the request body (see Risks R1).
-- Reader service (the program that talks to the RFID readers). We only define the scan endpoint it will call. The current `service/main_assy.py` calls the old endpoints, so it stops working at B3.2. That is accepted: the system is not launched. It is replaced in the reader service phase.
+- Reader service (the program that talks to the RFID readers). We only define the scan endpoint it will call. The current `service/main_assy.py` calls the old endpoints, so it stops working at B3.2. That is accepted: the system is not launched. It is replaced in the reader service phase. Until then, scans come from a mock reader script (B3.4) against the dev DB with fake data.
 - Frontend changes. FE moves to the new API in B7. Until then, FE runs in mock mode.
 - Users / login / API log refactor into the new layers (B6).
 
@@ -72,7 +72,7 @@ All confirmed with you.
 | D19 | No `is_terminal` flag. `CLEARED` is the only closing status; code finds it by its code. Adding `CANCELLED` later needs a code change anyway (R8). |
 | D20 | Invariant: lot status ≠ `CLEARED` **if and only if** the lot has an active pairing. Only `moveStatus` writes lot status and closes pairings, so both change together. |
 | D21 | `tb_assy_api_log` stays. The lot table keeps only the latest mapped data; the log keeps every call (raw response, HTTP status, error, duration) for all three upstream APIs. |
-| D22 | **Abnormal scan** (added 2026-10-26). A `SCANNED` move is abnormal when its target is not the next active status after the lot's current one, ordered by `seq` (`CLEARED` excluded). This covers a forward skip (`REGISTERED` → `MC_F1`) and every backward move (`MC_F1` → `GR_F1`). The lot still moves (D5). The event gets `is_abnormal = 1`, and the FE shows a toast. `PAIRED` and `CLEARED` events are never abnormal. A duplicate read (D6) writes no event, so it is never abnormal. |
+| D22 | **Abnormal scan** (added 2026-10-26). A `SCANNED` move is abnormal when its target is not the next active status after the lot's current one, ordered by `seq` (`CLEARED` excluded). This covers a forward skip (`REGISTERED` → `MC_F1`) and every backward move (`MC_F1` → `GR_F1`). The lot still moves (D5). The event gets `is_abnormal = 1`. The BE pushes it to the FE over SSE (7.10), and the FE shows a toast. `PAIRED` and `CLEARED` events are never abnormal. A duplicate read (D6) writes no event, so it is never abnormal. |
 | P2 | Table names keep the `tb_assy_` / `tb_master_` prefix. Old tables are already dropped, so the names are free. |
 | P3 | API base stays `/api/assembly` with new resource paths. No `/v2`. |
 | P4 | Feature folders: `modules/<feature>/{routes,controller,service,repository,schemas}.js`. |
@@ -437,7 +437,7 @@ No done API call (D17). `remark` is required (1–255 chars).
 | `GET /lots/:lot_no/journey` | Flat timeline of all events of the lot (all its pairings), `ORDER BY created_at ASC, id ASC`. Each row: `created_at`, `event_type`, `from_status`, `to_status`, `location_code`, `tag_code`, `source`, `emp_id`, `remark`. Lot not in our DB → 404 `LOT_NOT_REGISTERED`. |
 | `GET /tags/:tag_code` | Tag + active pairing with lot. Replaces `lot-by-tag`. |
 | `GET /lots` | Current-state list. Filters: `status`, `process`, `q` (lot / tag / WOS / brg_type), `active` (default true = status ≠ `CLEARED`), `page`, `page_size` (default 50, max 200) |
-| `GET /events` | Event history. Filters: `from`, `to`, `event_type`, `source`, `location`, `abnormal`, `q` (lot / tag / emp / brg_type), `page`, `page_size`. Each row carries `is_abnormal`. The Clear Tag history tab = `event_type=CLEARED`. The abnormal toast (D22) polls `abnormal=true&from=<last check>`. |
+| `GET /events` | Event history. Filters: `from`, `to`, `event_type`, `source`, `location`, `abnormal`, `q` (lot / tag / emp / brg_type), `page`, `page_size`. Each row carries `is_abnormal`. The Clear Tag history tab = `event_type=CLEARED`. `abnormal=true` is for the history list; the live toast uses the stream (7.10). |
 | `GET /unknown-reads` | Unknown reads. Filter: `location`. |
 | `GET /dashboard/summary` | Lot count + qty per status (from `tb_assy_lot`, no pairing join) |
 | `GET /dashboard/by-process` | Active qty per process (status → location → process) |
@@ -489,6 +489,24 @@ Mounted only when `ENABLE_MOCK_ROUTES=true`. Same response shapes as the real AP
 | `GET /mock/machines` | static fake list | `API_MACHINE_URL` (new) |
 
 Plus the mock admin actions the Mock Done page uses (list / add / delete) under `/mock/done`.
+
+### 7.10 Live events (SSE) — B3
+
+`GET /events/stream` returns `text/event-stream`. One connection per browser tab. It is the only push channel: it pushes abnormal scans (D22) and tells the FE when lot counts change, so the dashboard is real-time.
+
+**Rule for every publisher:** publish to the in-process bus (`shared/eventBus.js`, a Node `EventEmitter`) only **after** the transaction commits. A rolled-back change never reaches the FE.
+
+Two message types:
+
+| Event | `id` | Data | Published by |
+| --- | --- | --- | --- |
+| `scan.abnormal` | `<pairing_event.id>` | `{ lot_no, tag_code, from_status, to_status, location_code, created_at }` | `scanService`, once per abnormal `MOVED` tag |
+| `lots.changed` | none | `{ source, count }` (`source` in `web`, `reader`, `job`; `count` = lots changed) | Once per committed request, never per tag: pair (7.2), one `POST /scans` batch with at least one `MOVED`, manual clear, one auto clear job run with at least one clear. `SEEN` and `UNKNOWN` do not change counts, so they do not publish. |
+
+1. **Reconnect without loss.** The browser's `EventSource` reconnects on its own and sends `Last-Event-ID`. The stream first sends the `scan.abnormal` events with `id > Last-Event-ID` from the DB (max 100), then live ones. So a BE restart drops no toast. `lots.changed` has no `id` and no backfill: the FE reloads once on every (re)connect instead.
+2. **Keep-alive:** a comment line `: ping` every 25 s.
+3. **Clean-up:** remove the bus listener on `req.on('close')`.
+4. **FE (B7):** on `lots.changed`, wait 1 s (debounce) and reload the dashboard once. The 3-minute polling is removed.
 
 ---
 
@@ -585,6 +603,8 @@ Requests in `bruno/AYT-RFID/`, one per endpoint, grouped by module. Fake data on
 | R7 | FE calls old routes until B7. | FE breaks against the real backend during B0–B5. | FE keeps working in mock mode. B7 switches it. |
 | R8 | Wrong pairs are fixed by manual clear (D12). | Stage-5 counts include wrong pairs. | The remark and the journey show the truth. Adding a `CANCELLED` status later is additive (one master row + one service branch). |
 | R9 | D20 spans two tables (lot status + pairing `closed_at`). The DB cannot enforce it. | A bug outside `moveStatus` could leave a lot "active" with no tag, or the reverse. | Only `moveStatus` writes both; lot row lock; invariant tests (section 10) with a check query: lots where status ≠ `CLEARED` and no active pairing, and the reverse. |
+| R10 | SSE bus is in memory (7.10). | With two Node instances, a tab on instance A misses scans saved on instance B. | Fine under A4 (one instance). If that changes: DB poll in the stream handler, or a shared pub/sub. |
+| R11 | `server.js:10` plans a compression middleware. Compression buffers the response. | SSE messages arrive late or never. | When compression is added, skip `text/event-stream`, or flush after each write. |
 
 ---
 
@@ -596,7 +616,7 @@ Requests in `bruno/AYT-RFID/`, one per endpoint, grouped by module. Fake data on
 | A2 | Lot numbers fit `VARCHAR(15)` | Widen in the up script |
 | A3 | Reader timestamps are not needed; server time at the scan request is good enough | Add optional `read_at` to the scan body |
 | A4 | One Node instance in prod | In-memory machine cache is per instance (fine); the job flag still applies (R3) |
-| A5 | No reader is installed at Before Gauging Room F1. A scan there (if one is added later) moves the pair back to `REGISTERED`, under rule D5. | Fine as is. |
+| A5 | No reader is installed at Before Gauging Room F1. A scan there (if one is added later) moves the pair back to `REGISTERED`, under rule D5, and is flagged abnormal (D22). | Fine as is. |
 
 ---
 

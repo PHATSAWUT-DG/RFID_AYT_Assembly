@@ -15,8 +15,8 @@ Do not use it on a database with data you need: the rollback drops every table a
 | Script | Does |
 |---|---|
 | `backend/scripts/setup_dev_database.sql` | Creates the empty database `db_rfid_assembly_dev` if it does not exist |
-| `backend/backup_DB_SP/create_assy_core.sql` | Up: creates the 12 tables, indexes and constraints, and seeds process / locations / statuses. One transaction. Has no `USE` line |
-| `backend/backup_DB_SP/create_assy_core.down.sql` | Down: drops the same 12 tables with all data, including users. One transaction |
+| `backend/sql/create_assy_core.sql` | Up: creates the 12 tables, indexes and constraints, and seeds process / locations / statuses. One transaction. Has no `USE` line |
+| `backend/sql/create_assy_core.down.sql` | Down: drops the same 12 tables with all data, including users. One transaction |
 
 ## Steps
 
@@ -29,7 +29,7 @@ Do not use it on a database with data you need: the rollback drops every table a
 
 Command form for `sqlcmd` (folder: repo root):
 
-    sqlcmd -S <server> -E -d <db> -b -i backend/backup_DB_SP/create_assy_core.sql
+    sqlcmd -S <server> -E -d <db> -b -i backend/sql/create_assy_core.sql
 
 `-E` = Windows authentication (use `-U` / `-P` for SQL login). `-b` = stop with an error exit code when a batch fails.
 

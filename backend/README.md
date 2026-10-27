@@ -21,7 +21,7 @@ Node 22 (CommonJS), Express 5, mssql, zod. Tests use `node:test`.
 | `shared/` | `AppError`, `errorHandler`, `validate` (zod), `sqlErrors`. |
 | `routes/`, `services/` | Legacy. See below. |
 | `scripts/` | Scripts you run yourself (`rehash_passwords.js`, `setup_dev_database.sql`). |
-| `backup_DB_SP/` | SQL: `create_assy_core.sql` (+ `.down.sql`) and older stored procedures. |
+| `sql/` | SQL: `create_assy_core.sql` (+ `.down.sql`) and older stored procedures. |
 | `test/unit/` | Unit tests. The path mirrors the source path. |
 | `test/helpers/` | `startApp` (HTTP test server), `fakeDb` (fake `db`). |
 

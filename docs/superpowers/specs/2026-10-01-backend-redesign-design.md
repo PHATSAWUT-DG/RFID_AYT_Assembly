@@ -287,14 +287,14 @@ The old tables were dropped with the rest. B1.1 recreates them (roadmap O1) with
 
 ### 5.3 SQL delivery
 
-- Up: `backend/backup_DB_SP/create_assy_core.sql`. Down: `create_assy_core.down.sql`. Same pattern as `alter_process_can_clear_tag.sql`, except: no `USE` line (you select the target DB first, because `DB_NAME` differs per machine).
+- Up: `backend/sql/create_assy_core.sql`. Down: `create_assy_core.down.sql`. Same pattern as `alter_process_can_clear_tag.sql`, except: no `USE` line (you select the target DB first, because `DB_NAME` differs per machine).
 - The up script runs as one transaction (`SET XACT_ABORT ON`). If any of its tables already exists, it prints an error and changes nothing.
 - Seed (process, locations, statuses) is in the up script. It looks up ids by code, never by literal id.
 - `backend/scripts/setup_dev_database.sql` only creates the empty dev database. The schema lives only in `create_assy_core.sql`. Steps: `docs/runbooks/dev-database-setup.md`.
 - You run all SQL yourself. I show the up/down SQL first and never run it.
 - The down script drops the new tables. It needs your explicit OK each time it runs.
 - Filtered indexes need `ANSI_NULLS ON` and `QUOTED_IDENTIFIER ON` on writing sessions. The `mssql` driver default is ON. The script header notes it.
-- Old SP files in `backend/backup_DB_SP/dbo.*.sql` for tables that no longer exist get deleted from the repo in the branch that replaces them.
+- Old SP files in `backend/sql/dbo.*.sql` for tables that no longer exist get deleted from the repo in the branch that replaces them.
 
 ---
 

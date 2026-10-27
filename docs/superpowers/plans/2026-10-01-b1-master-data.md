@@ -53,10 +53,10 @@ The spec leaves these open. Each one is written back into the spec in the task t
 
 | File | Status | Duty | Task |
 | --- | --- | --- | --- |
-| `backend/backup_DB_SP/create_assy_core.sql` | Create | Up: all new tables, indexes, constraints, seed | B1.1 |
-| `backend/backup_DB_SP/create_assy_core.down.sql` | Create | Down: drop every table the up script created | B1.1 |
+| `backend/sql/create_assy_core.sql` | Create | Up: all new tables, indexes, constraints, seed | B1.1 |
+| `backend/sql/create_assy_core.down.sql` | Create | Down: drop every table the up script created | B1.1 |
 | `backend/scripts/setup_dev_database.sql` | Rewrite | Create the empty dev DB only (M2) | B1.1 |
-| `backend/backup_DB_SP/dbo.{tb_master_process,tb_master_assy_status,tb_assy_lot,tb_assy_tag,tb_assy_login,tb_assy_api_log,tb_assy_mock_as400,tb_assy_mock_done}.Table.sql` | Delete | Old definitions of tables the up script now owns | B1.1 |
+| `backend/sql/dbo.{tb_master_process,tb_master_assy_status,tb_assy_lot,tb_assy_tag,tb_assy_login,tb_assy_api_log,tb_assy_mock_as400,tb_assy_mock_done}.Table.sql` | Delete | Old definitions of tables the up script now owns | B1.1 |
 | `docs/runbooks/dev-database-setup.md` | Create | Create DB, run up, verify, first user, roll back | B1.1 |
 | `backend/shared/sqlErrors.js` | Modify | Add `getConstraintConflict(err)` | B1.2a |
 | `backend/modules/master/repository.js` | Create | Parameterized SQL for the three tables | B1.2a, B1.3, B1.4a |
@@ -68,7 +68,7 @@ The spec leaves these open. Each one is written back into the spec in the task t
 | `backend/server.js` | Modify | Mount master module before `routes/assembly.js` | B1.2b |
 | `backend/routes/assembly.js` | Modify | Delete `/process` (B1.2b) and `/status` (B1.4a) handlers + imports | B1.2b, B1.4a |
 | `backend/services/masterService.js`, `backend/test/unit/masterService.test.js` | Delete | Replaced by the module | B1.4b |
-| `backend/backup_DB_SP/dbo.Stored_tb_master_*.StoredProcedure.sql` (8 files) | Delete | Old master SPs | B1.4b |
+| `backend/sql/dbo.Stored_tb_master_*.StoredProcedure.sql` (8 files) | Delete | Old master SPs | B1.4b |
 | `backend/test/unit/shared/sqlErrors.test.js` | Modify | Tests for `getConstraintConflict` | B1.2a |
 | `backend/test/unit/modules/master/service.test.js` | Create | Service rules with a fake repo | B1.2a, B1.3, B1.4a |
 | `backend/test/unit/modules/master/routes.test.js` | Create | HTTP: validation, status codes, controller → service | B1.2b, B1.3, B1.4a |
@@ -116,7 +116,7 @@ Handoff for the new session: "Execute `docs/superpowers/plans/2026-10-01-b1-mast
 **Why:** Every later branch needs the new tables. Login is broken until `tb_assy_login` exists again (O1).
 
 **Files:**
-- Create: `backend/backup_DB_SP/create_assy_core.sql`, `backend/backup_DB_SP/create_assy_core.down.sql`
+- Create: `backend/sql/create_assy_core.sql`, `backend/sql/create_assy_core.down.sql`
 - Rewrite: `backend/scripts/setup_dev_database.sql`
 - Delete: the 8 old `dbo.*.Table.sql` files listed in the file map
 - Create: `docs/runbooks/dev-database-setup.md`
@@ -190,7 +190,7 @@ Header comment: "Drops every table `create_assy_core.sql` created, **with all da
 
 - [ ] **Step 3: Rewrite `scripts/setup_dev_database.sql`**
 
-Only: `IF DB_ID('db_rfid_assembly_dev') IS NULL CREATE DATABASE db_rfid_assembly_dev;` and a comment: "Next: select this database and run `backend/backup_DB_SP/create_assy_core.sql`. See `docs/runbooks/dev-database-setup.md`." All old tables, SPs and seed in this file go.
+Only: `IF DB_ID('db_rfid_assembly_dev') IS NULL CREATE DATABASE db_rfid_assembly_dev;` and a comment: "Next: select this database and run `backend/sql/create_assy_core.sql`. See `docs/runbooks/dev-database-setup.md`." All old tables, SPs and seed in this file go.
 
 - [ ] **Step 4: Delete the 8 old `dbo.*.Table.sql` files** (file map). Keep `dbo.tb_assy_log.Table.sql`, `dbo.tb_assy_wos.Table.sql` and all SP files; the branches that replace them delete them (spec 5.3).
 
@@ -444,7 +444,7 @@ Routes: `POST /locations` with `" GR_F2 "` → service got `location_code: 'GR_F
 
 **Files:**
 - Delete: `backend/services/masterService.js`, `backend/test/unit/masterService.test.js`
-- Delete: `backend/backup_DB_SP/dbo.Stored_tb_master_assy_status_{delete,insert,select,update}.StoredProcedure.sql`, `dbo.Stored_tb_master_process_{delete,insert,select,update}.StoredProcedure.sql`
+- Delete: `backend/sql/dbo.Stored_tb_master_assy_status_{delete,insert,select,update}.StoredProcedure.sql`, `dbo.Stored_tb_master_process_{delete,insert,select,update}.StoredProcedure.sql`
 - Modify: roadmap (B1.4b row only; B1 closes in B1.5)
 
 - [ ] **Step 1: Confirm nothing imports them** — Grep `masterService` and `Stored_tb_master_` under `backend/` (excluding the files being deleted). Expected: no hits.
@@ -516,7 +516,7 @@ Routes: `POST /locations` with `" GR_F2 "` → service got `location_code: 'GR_F
 | Section | Content |
 | --- | --- |
 | Run | `npm install`, `npm test`; link `docs/runbooks/dev-database-setup.md`; env names from `.env.example` (no values) |
-| Folder map | One line per folder: `app.js` / `server.js`, `db.js`, `modules/<name>/`, `shared/`, `routes/` (legacy), `services/` (legacy), `scripts/`, `backup_DB_SP/`, `test/unit/`, `test/helpers/` |
+| Folder map | One line per folder: `app.js` / `server.js`, `db.js`, `modules/<name>/`, `shared/`, `routes/` (legacy), `services/` (legacy), `scripts/`, `sql/`, `test/unit/`, `test/helpers/` |
 | Module layout | `modules/<name>/{routes,controller,service,repository,schemas,index}.js`: one-line duty each, and who may import whom (routes → controller → service → repository → `db.js`) |
 | Naming | camelCase files; PascalCase only for a file that exports a class (`AppError.js`); factories are `createXxx({ deps })`; tests mirror the source path as `<file>.test.js` |
 | Rules | New code imports only `db.js` (`query`, `transaction`, `typed`), never `getPool`; errors are `AppError` with a code from spec section 9; input is checked by zod in `validate`; every endpoint has a Bruno request |

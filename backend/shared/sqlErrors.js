@@ -10,4 +10,13 @@ const getUniqueViolationName = (err) => {
     return match ? match[1] : null;
 };
 
-module.exports = { isUniqueViolation, getUniqueViolationName };
+// 547 = FOREIGN KEY / REFERENCE / CHECK conflict. REFERENCE means a DELETE hit a row that is still used.
+const CONSTRAINT_CONFLICT = /conflicted with the (FOREIGN KEY|REFERENCE|CHECK) constraint "([^"]+)"/i;
+
+const getConstraintConflict = (err) => {
+    if (err?.number !== 547) return null;
+    const match = CONSTRAINT_CONFLICT.exec(err.message);
+    return match ? { kind: match[1].toUpperCase(), name: match[2] } : null;
+};
+
+module.exports = { isUniqueViolation, getUniqueViolationName, getConstraintConflict };

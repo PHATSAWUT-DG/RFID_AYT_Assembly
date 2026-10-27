@@ -1,6 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { isUniqueViolation, getUniqueViolationName } = require('../../../shared/sqlErrors');
+const {
+    isUniqueViolation, getUniqueViolationName, getConstraintConflict,
+} = require('../../../shared/sqlErrors');
 
 const sqlError = (number, message) => Object.assign(new Error(message), { number });
 
@@ -27,4 +29,27 @@ test('getUniqueViolationName reads the index or constraint name', () => {
 
 test('getUniqueViolationName: null when it is not a unique violation', () => {
     assert.strictEqual(getUniqueViolationName(sqlError(547, "constraint 'FK_x'")), null);
+});
+
+const foreignKey = sqlError(547,
+    'The INSERT statement conflicted with the FOREIGN KEY constraint "FK_master_location_process". The conflict occurred in database "db", table "dbo.tb_master_process", column \'id\'.');
+const reference = sqlError(547,
+    'The DELETE statement conflicted with the REFERENCE constraint "FK_master_location_process". The conflict occurred in database "db", table "dbo.tb_master_location", column \'process_id\'.');
+const check = sqlError(547,
+    'The INSERT statement conflicted with the CHECK constraint "CK_master_assy_status_location_rule". The conflict occurred in database "db", table "dbo.tb_master_assy_status".');
+
+test('getConstraintConflict reads the kind and name of a 547 error', () => {
+    assert.deepStrictEqual(getConstraintConflict(foreignKey),
+        { kind: 'FOREIGN KEY', name: 'FK_master_location_process' });
+    assert.deepStrictEqual(getConstraintConflict(reference),
+        { kind: 'REFERENCE', name: 'FK_master_location_process' });
+    assert.deepStrictEqual(getConstraintConflict(check),
+        { kind: 'CHECK', name: 'CK_master_assy_status_location_rule' });
+});
+
+test('getConstraintConflict: null when it is not a constraint conflict', () => {
+    assert.strictEqual(getConstraintConflict(duplicateConstraint), null);
+    assert.strictEqual(getConstraintConflict(sqlError(547, 'unexpected text')), null);
+    assert.strictEqual(getConstraintConflict(new Error('x')), null);
+    assert.strictEqual(getConstraintConflict(undefined), null);
 });

@@ -40,25 +40,31 @@ Command form for `sqlcmd` (folder: repo root):
 SELECT (SELECT COUNT(*) FROM tb_master_process)     AS processes,
        (SELECT COUNT(*) FROM tb_master_location)    AS locations,
        (SELECT COUNT(*) FROM tb_master_assy_status) AS statuses;
+GO
 
 -- Expect: 2 REGISTERED bf_gr_f1 / 3 GR_F1 gr_f1 / 4 MC_F1 mc_f1 / 5 CLEARED NULL
 SELECT s.seq, s.status_code, l.location_code
 FROM tb_master_assy_status s
 LEFT JOIN tb_master_location l ON l.id = s.location_id
 ORDER BY s.seq;
+GO
 
 -- Expect: error 547 (CHECK constraint CK_master_assy_status_location_rule). Nothing is saved.
 BEGIN TRAN;
 INSERT INTO tb_master_assy_status (status_code, status_label, seq, location_id)
 VALUES ('X_TEST', 'x', 9, NULL);
 ROLLBACK;
+GO
 
 -- Expect: error 2601 (unique index UX_master_assy_status_location). Nothing is saved.
 BEGIN TRAN;
 INSERT INTO tb_master_assy_status (status_code, status_label, seq, location_id)
 SELECT 'X_TEST', 'x', 9, id FROM tb_master_location WHERE location_code = 'gr_f1';
 ROLLBACK;
+GO
 ```
+
+Keep the `GO` lines. The up script turns on `XACT_ABORT`, and the setting stays on in the same SSMS window. With it on, an error stops the rest of its batch, so without `GO` the 547 error would skip the 2601 check.
 
 If an error query leaves a transaction open (SSMS shows open transactions on close), run `ROLLBACK;` once.
 

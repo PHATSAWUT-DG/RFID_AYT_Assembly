@@ -1,5 +1,15 @@
 const bcrypt = require('bcryptjs');
-const { asResult } = require('./masterService');
+
+// Interim: the SPs returned SQL errors as a `result` string and the frontend
+// depends on it. B6 replaces this with typed errors and HTTP codes.
+const asResult = async (fn) => {
+    try {
+        await fn();
+        return { result: 'OK' };
+    } catch (err) {
+        return { result: err.message };
+    }
+};
 
 // The hash crosses the service boundary here (needed for bcrypt.compareSync)
 // and must not leak further — the destructure below is what keeps it out of

@@ -92,7 +92,7 @@ The spec leaves these open. Each one is written back into the spec in the task t
 | B1.2b | Processes HTTP: schemas, controller, routes, wiring, Bruno, delete old `/process` | Sonnet 5, medium | [x] `modules/master/{schemas,controller,routes,index}.js`, `server.js`, `routes/assembly.js`; tests 73/73. User Bruno run pending |
 | B1.3 | Locations: repository, service, HTTP, Bruno | Sonnet 5, medium | [x] `modules/master/*`, `bruno/AYT-RFID/master/Locations - *.yml`; tests 86/86. User Bruno run pending |
 | B1.4a | Statuses: rules, HTTP, Bruno, delete old `/status` | Sonnet 5, high | [x] code, tests (117/117), Bruno, spec 7.8 / 5.2 done. User Bruno run pending |
-| B1.4b | Delete `masterService.js`, its test, old master SP files | Haiku 4.5, low | [ ] |
+| B1.4b | Delete `masterService.js`, its test, old master SP files | Haiku 4.5, low | [x] 10 files deleted; `asResult` moved to `userService.js:5`; tests 107/107 |
 | B1.5 | Merge `database.js` into `db.js` | Haiku 4.5, low | [ ] |
 | B1.6 | Backend conventions doc (`README.md` + `CLAUDE.md` import); close B1 in the roadmap | Sonnet 5, medium — main session | [ ] |
 | B1.6-lint | ESLint for the backend (file name case, layer import rules) | — | [-] DEFERRED: the backend has no ESLint yet, so this is a setup task of its own, not 2 rules. Resume as its own roadmap row: flat config, `eslint-plugin-n` for `require` bans, fix or ignore existing errors. |

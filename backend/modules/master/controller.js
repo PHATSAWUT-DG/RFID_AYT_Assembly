@@ -21,6 +21,19 @@ const createMasterController = ({ service }) => ({
     updateLocation: async (req, res) => {
         res.json(await service.updateLocation(req.valid.params.id, req.valid.body));
     },
+    listStatuses: async (req, res) => {
+        res.json(await service.listStatuses());
+    },
+    createStatus: async (req, res) => {
+        res.status(201).json(await service.createStatus(req.valid.body));
+    },
+    updateStatus: async (req, res) => {
+        res.json(await service.updateStatus(req.valid.params.id, req.valid.body));
+    },
+    deleteStatus: async (req, res) => {
+        await service.deleteStatus(req.valid.params.id);
+        res.status(204).end();
+    },
 });
 
 module.exports = { createMasterController };

@@ -167,7 +167,7 @@ Seed (all process `1500`):
 | Column | Type | Rule |
 | --- | --- | --- |
 | id | INT IDENTITY | PK |
-| status_code | VARCHAR(30) | NOT NULL, UNIQUE. Code refers to statuses by code, never by id. |
+| status_code | VARCHAR(30) | NOT NULL, UNIQUE. Code refers to statuses by code, never by id. The API trims and upper-cases it and allows only `A-Z`, `0-9`, `_` (plan M8). |
 | status_label | VARCHAR(50) | NOT NULL |
 | seq | INT | NOT NULL. Display order and normal scan order (D5, D22). |
 | location_id | INT NULL | FK → `tb_master_location.id`. Filtered UNIQUE `WHERE location_id IS NOT NULL` (one status per location). |
@@ -490,7 +490,8 @@ CRUD for `processes`, `locations`, `statuses`. Paths are plural and flat (plan M
 
 - Delete a row that is still referenced → 409 `MASTER_IN_USE`.
 - System statuses (`REGISTERED`, `CLEARED`) cannot be deleted. Their code cannot change.
-- The status CHECK rule (5.2) is also checked in the service, for a clear error message.
+- The status CHECK rule (5.2) is checked in the request schema (zod `superRefine`), for a clear 400 `VALIDATION_ERROR` with `details[0].path = 'location_id'` (plan M7).
+- A second status on a location, or a repeated `status_code` → 409 `MASTER_DUPLICATE`. `details[0].path` is `location_id` or `status_code`.
 - Locations prefer `is_active = 0` over delete.
 
 ### 7.9 Mock upstream routes — B2 / B4 / B5 (P8)

@@ -1,0 +1,75 @@
+info:
+  name: Statuses - Update
+  type: http
+  seq: 10
+
+http:
+  method: PUT
+  url: "{{urlPrefix}}/api/assembly/statuses/1"
+  body:
+    type: json
+    data: |-
+      {
+        "status_code": "REGISTERED",
+        "status_label": "Registered (before gauging)",
+        "seq": 1,
+        "location_id": 5
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Update a status by id. Send the full body (same fields and rules as Create). Returns the updated row.
+  A system status (`REGISTERED`, `CLEARED`) can change its label, `seq` and location, but not its code.
+  `:id` must be a positive integer.
+
+  ### 200 Updated
+  ```json
+  { "id": 1, "status_code": "REGISTERED", "status_label": "Registered (before gauging)", "seq": 1, "location_id": 5 }
+  ```
+
+  ### 400 VALIDATION_ERROR
+  Bad body (for example `CLEARED` with a location), or `:id` is not a positive integer.
+  ```json
+  {
+    "error": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": [{ "in": "params", "path": "id", "message": "Invalid input: expected number, received NaN" }]
+  }
+  ```
+
+  ### 404 MASTER_NOT_FOUND
+  ```json
+  { "error": "MASTER_NOT_FOUND", "message": "Status 99 not found" }
+  ```
+
+  ### 409 MASTER_IN_USE
+  A system status changed its code.
+  ```json
+  { "error": "MASTER_IN_USE", "message": "System status REGISTERED cannot change its code" }
+  ```
+
+  ### 409 MASTER_DUPLICATE
+  The code, or the location, is already used by another status.
+  ```json
+  {
+    "error": "MASTER_DUPLICATE",
+    "message": "Status code or location already used by another status",
+    "details": [{ "in": "body", "path": "location_id", "message": "Status code or location already used by another status" }]
+  }
+  ```
+
+  ### 422 MASTER_INVALID_REF
+  ```json
+  {
+    "error": "MASTER_INVALID_REF",
+    "message": "Location does not exist",
+    "details": [{ "in": "body", "path": "location_id", "message": "Location does not exist" }]
+  }
+  ```

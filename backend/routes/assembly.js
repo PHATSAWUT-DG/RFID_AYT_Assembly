@@ -6,7 +6,6 @@ const axios = require('axios');
 const db = require('../db');
 const { insertApiLog } = require('../services/apiLogService');
 const { listMockDone, addMockDone, removeMockDone } = require('../services/mockService');
-const { listStatuses, createStatus, updateStatus, deleteStatus } = require('../services/masterService');
 const { verifyLogin, listUsers, createUser, updateUser, deleteUser } = require('../services/userService');
 
 
@@ -285,27 +284,6 @@ router.put('/login/users/:id', async (req, res) => {
 
 router.delete('/login/users/:id', async (req, res) => {
     try { res.json(await deleteUser(db, req.params.id)); }
-    catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// STATUS MASTER
-router.get('/status', async (req, res) => {
-    try { res.json(await listStatuses(db)); }
-    catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.post('/status', async (req, res) => {
-    try { res.json(await createStatus(db, req.body)); }
-    catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.put('/status/:id', async (req, res) => {
-    try { res.json(await updateStatus(db, { id: req.params.id, ...req.body })); }
-    catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.delete('/status/:id', async (req, res) => {
-    try { res.json(await deleteStatus(db, req.params.id)); }
     catch (err) { res.status(500).json({ error: err.message }); }
 });
 

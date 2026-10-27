@@ -1,0 +1,67 @@
+info:
+  name: Statuses - Create
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{urlPrefix}}/api/assembly/statuses"
+  body:
+    type: json
+    data: |-
+      {
+        "status_code": "GR_F2",
+        "status_label": "Gauging Room F2",
+        "seq": 5,
+        "location_id": 4
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Create a status. Returns the new row.
+  `status_code` is trimmed and upper-cased, 1-30 chars, only `A-Z`, `0-9`, `_`. It must be unique.
+  `status_label` is trimmed, 1-50 chars. `seq` is an integer >= 0 (sort order).
+  `location_id` is an existing location, and a location can have only one status.
+  The one exception is `CLEARED`: it must have `"location_id": null`. Every other code needs a location.
+
+  ### 201 Created
+  ```json
+  { "id": 5, "status_code": "GR_F2", "status_label": "Gauging Room F2", "seq": 5, "location_id": 4 }
+  ```
+
+  ### 400 VALIDATION_ERROR
+  `CLEARED` with a location (or another code without one) is rejected here.
+  ```json
+  {
+    "error": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": [{ "in": "body", "path": "location_id", "message": "CLEARED must have no location" }]
+  }
+  ```
+
+  ### 409 MASTER_DUPLICATE
+  The code, or the location, is already used by another status. `path` says which one.
+  ```json
+  {
+    "error": "MASTER_DUPLICATE",
+    "message": "Status code or location already used by another status",
+    "details": [{ "in": "body", "path": "location_id", "message": "Status code or location already used by another status" }]
+  }
+  ```
+
+  ### 422 MASTER_INVALID_REF
+  `location_id` does not exist.
+  ```json
+  {
+    "error": "MASTER_INVALID_REF",
+    "message": "Location does not exist",
+    "details": [{ "in": "body", "path": "location_id", "message": "Location does not exist" }]
+  }
+  ```

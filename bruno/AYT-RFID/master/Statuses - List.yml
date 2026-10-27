@@ -1,0 +1,47 @@
+info:
+  name: Statuses - List
+  type: http
+  seq: 8
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/statuses"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  List statuses ordered by `seq`, then `id`.
+  Each row also has the location and process it belongs to (all `null` for CLEARED) and `is_system`.
+  `is_system` is true for `REGISTERED` and `CLEARED`: they can be edited, but not renamed or deleted.
+
+  ### 200 With rows
+  ```json
+  [
+    {
+      "id": 1, "status_code": "REGISTERED", "status_label": "Registered", "seq": 1, "location_id": 5,
+      "location_code": "bf_gr_f1", "location_name": "Before Gauging Room F1",
+      "process_id": 1, "process_code": "1400", "is_system": true
+    },
+    {
+      "id": 4, "status_code": "CLEARED", "status_label": "Cleared", "seq": 4, "location_id": null,
+      "location_code": null, "location_name": null,
+      "process_id": null, "process_code": null, "is_system": true
+    }
+  ]
+  ```
+
+  ### 200 Empty
+  ```json
+  []
+  ```
+
+  ### 500 INTERNAL
+  ```json
+  { "error": "INTERNAL", "message": "Internal server error" }
+  ```

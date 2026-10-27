@@ -40,7 +40,7 @@ Where: one **new session (Sonnet 5, medium)** for B0.1–B0.4. Handoff: "Execute
 | B1.2a | `getConstraintConflict` + master repository / service for processes | `shared/sqlErrors.js`, `modules/master/{repository,service}.js` | Sonnet 5, medium | [x] `shared/sqlErrors.js:13`, `modules/master/{repository,service}.js` |
 | B1.2b | Processes HTTP + wiring + Bruno. Delete old `/process` handlers. | `modules/master/*`, `server.js` | Sonnet 5, medium | [x] code, tests (73/73), Bruno, spec 7.8 / 9 done. User Bruno run pending. FE still calls `/process` (`ClearTag.tsx:85`) |
 | B1.3 | `locations` CRUD (`is_active` instead of delete) + Bruno | `modules/master/*` | Sonnet 5, medium | [x] `modules/master/*`, Bruno `Locations - *.yml`; tests 86/86. User Bruno run pending |
-| B1.4a | `statuses` CRUD: system statuses, CLEARED ⇔ no location rule, one status per location + Bruno. Delete old `/status` handlers. | `modules/master/*` | Sonnet 5, high | [ ] |
+| B1.4a | `statuses` CRUD: system statuses, CLEARED ⇔ no location rule, one status per location + Bruno. Delete old `/status` handlers. | `modules/master/*` | Sonnet 5, high | [x] `modules/master/*`, Bruno `Statuses - *.yml`, old `/status` deleted; tests 117/117. User Bruno run pending |
 | B1.4b | Delete `services/masterService.js`, its test, and old master SP files | — | Haiku 4.5, low | [ ] |
 
 Where: B1.1 in the main session (migration needs our discussion). B1.2a–B1.4a in one new session (Sonnet 5; B1.4a at high effort). B1.4b in the same session or a new one (Haiku 4.5, low). B1.2 and B1.4 were split to stay under about 5 files or 300 lines per task. Detail: `2026-10-01-b1-master-data.md`.

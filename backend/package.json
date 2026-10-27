@@ -1,8 +1,10 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
     "test": "node --test \"test/unit/**/*.test.js\" \"test/helpers/**/*.test.js\"",
     "test:integration": "node --test \"test/integration/**/*.test.js\""
   },

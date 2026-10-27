@@ -477,7 +477,16 @@ When the lot is `CLEARED`: `location_code`, `process_code`, `can_clear_tag`, `pa
 
 ### 7.8 Master data — B1
 
-CRUD for `processes`, `locations`, `statuses`.
+CRUD for `processes`, `locations`, `statuses`. Paths are plural and flat (plan M5).
+
+| Method | Path | Success |
+| --- | --- | --- |
+| GET | `/processes`, `/locations`, `/statuses` | 200 plain array |
+| POST | `/processes`, `/locations`, `/statuses` | 201 + the new row |
+| PUT | `/processes/:id`, `/locations/:id`, `/statuses/:id` | 200 + the updated row. Full body, not a patch. |
+| DELETE | `/processes/:id`, `/statuses/:id` | 204 |
+
+`:id` must be a positive integer, else 400 `VALIDATION_ERROR`. There is no `DELETE /locations/:id`.
 
 - Delete a row that is still referenced → 409 `MASTER_IN_USE`.
 - System statuses (`REGISTERED`, `CLEARED`) cannot be deleted. Their code cannot change.
@@ -563,7 +572,10 @@ Body: `{ "error": "<CODE>", "message": "<text>", "details"?: {...} }`. Same `err
 | `PAIRING_CLOSED` | 409 | Manual clear on a lot with no active pair |
 | `TAG_LOT_MISMATCH` | 409 | Manual clear: the tag is not on this lot |
 | `PROCESS_NOT_CLEARABLE` | 409 | Manual clear: current process has `can_clear_tag = 0` |
-| `MASTER_IN_USE` | 409 | Delete a referenced master row, or a system status |
+| `MASTER_IN_USE` | 409 | Delete a referenced master row, or a system status. Also: change the code of a system status |
+| `MASTER_DUPLICATE` | 409 | Master code already exists, or a location already has a status. `details[0].path` = the field |
+| `MASTER_NOT_FOUND` | 404 | Master row id not found (update / delete) |
+| `MASTER_INVALID_REF` | 422 | `process_id` or `location_id` points to a row that does not exist |
 | `LOCATION_HAS_NO_STATUS` | 422 | Scan at a location with no status mapped |
 | `UPSTREAM_ERROR` | 502 | AS400 API failed or timed out (web calls) |
 | `INTERNAL` | 500 | Anything else. Logged with stack. No internals in the body. |

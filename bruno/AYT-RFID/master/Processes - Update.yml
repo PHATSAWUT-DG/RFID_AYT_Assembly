@@ -1,0 +1,57 @@
+info:
+  name: Processes - Update
+  type: http
+  seq: 3
+
+http:
+  method: PUT
+  url: "{{urlPrefix}}/api/assembly/processes/3"
+  body:
+    type: json
+    data: |-
+      {
+        "process_code": "9999",
+        "process_name": "Test Process Updated",
+        "can_clear_tag": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Update a process by id. Send the full body (same fields as Create). Returns the updated row.
+  `:id` must be a positive integer.
+
+  ### 200 Updated
+  ```json
+  { "id": 3, "process_code": "9999", "process_name": "Test Process Updated", "can_clear_tag": true }
+  ```
+
+  ### 400 VALIDATION_ERROR
+  Bad body, or `:id` is not a positive integer.
+  ```json
+  {
+    "error": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": [{ "in": "params", "path": "id", "message": "Invalid input: expected number, received NaN" }]
+  }
+  ```
+
+  ### 404 MASTER_NOT_FOUND
+  ```json
+  { "error": "MASTER_NOT_FOUND", "message": "Process 99 not found" }
+  ```
+
+  ### 409 MASTER_DUPLICATE
+  ```json
+  {
+    "error": "MASTER_DUPLICATE",
+    "message": "Process code already exists",
+    "details": [{ "in": "body", "path": "process_code", "message": "Process code already exists" }]
+  }
+  ```

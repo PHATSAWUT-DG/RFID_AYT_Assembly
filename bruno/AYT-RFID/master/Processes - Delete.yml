@@ -1,0 +1,42 @@
+info:
+  name: Processes - Delete
+  type: http
+  seq: 4
+
+http:
+  method: DELETE
+  url: "{{urlPrefix}}/api/assembly/processes/3"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Delete a process by id. A process that still has locations cannot be deleted.
+
+  ### 204 Deleted
+  Empty body.
+
+  ### 400 VALIDATION_ERROR
+  `:id` is not a positive integer.
+  ```json
+  {
+    "error": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": [{ "in": "params", "path": "id", "message": "Invalid input: expected number, received NaN" }]
+  }
+  ```
+
+  ### 404 MASTER_NOT_FOUND
+  ```json
+  { "error": "MASTER_NOT_FOUND", "message": "Process 99 not found" }
+  ```
+
+  ### 409 MASTER_IN_USE
+  ```json
+  { "error": "MASTER_IN_USE", "message": "Process is still used by a location" }
+  ```

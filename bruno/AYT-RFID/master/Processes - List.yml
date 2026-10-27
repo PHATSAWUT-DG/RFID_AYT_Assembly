@@ -1,11 +1,11 @@
 info:
-  name: Process - List
+  name: Processes - List
   type: http
-  seq: 9
+  seq: 1
 
 http:
   method: GET
-  url: "{{urlPrefix}}/api/assembly/process"
+  url: "{{urlPrefix}}/api/assembly/processes"
   auth: inherit
 
 settings:
@@ -32,7 +32,7 @@ docs: |-
   []
   ```
 
-  ### 500 Database error
+  ### 500 INTERNAL
   ```json
-  { "error": "Failed to connect to database" }
+  { "error": "INTERNAL", "message": "Internal server error" }
   ```

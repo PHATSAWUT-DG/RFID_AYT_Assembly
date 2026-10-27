@@ -6,10 +6,7 @@ const axios = require('axios');
 const db = require('../db');
 const { insertApiLog } = require('../services/apiLogService');
 const { listMockDone, addMockDone, removeMockDone } = require('../services/mockService');
-const {
-    listStatuses, createStatus, updateStatus, deleteStatus,
-    listProcesses, createProcess, updateProcess, deleteProcess,
-} = require('../services/masterService');
+const { listStatuses, createStatus, updateStatus, deleteStatus } = require('../services/masterService');
 const { verifyLogin, listUsers, createUser, updateUser, deleteUser } = require('../services/userService');
 
 
@@ -309,29 +306,6 @@ router.put('/status/:id', async (req, res) => {
 
 router.delete('/status/:id', async (req, res) => {
     try { res.json(await deleteStatus(db, req.params.id)); }
-    catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// MASTER PROCESS
-// ================================================================
-
-router.get('/process', async (req, res) => {
-    try { res.json(await listProcesses(db)); }
-    catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.post('/process', async (req, res) => {
-    try { res.json(await createProcess(db, req.body)); }
-    catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.put('/process/:id', async (req, res) => {
-    try { res.json(await updateProcess(db, { id: req.params.id, ...req.body })); }
-    catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.delete('/process/:id', async (req, res) => {
-    try { res.json(await deleteProcess(db, req.params.id)); }
     catch (err) { res.status(500).json({ error: err.message }); }
 });
 

@@ -1,0 +1,52 @@
+info:
+  name: Processes - Create
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{urlPrefix}}/api/assembly/processes"
+  body:
+    type: json
+    data: |-
+      {
+        "process_code": "9999",
+        "process_name": "Test Process",
+        "can_clear_tag": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Create a process. Returns the new row.
+  `process_code` is trimmed, 1-10 chars, and must be unique. `process_name` is trimmed, 1-50 chars.
+  `can_clear_tag` (boolean) says if lots in this process can be cleared on the Clear Tag page. Default false.
+
+  ### 201 Created
+  ```json
+  { "id": 3, "process_code": "9999", "process_name": "Test Process", "can_clear_tag": false }
+  ```
+
+  ### 400 VALIDATION_ERROR
+  ```json
+  {
+    "error": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": [{ "in": "body", "path": "process_code", "message": "Invalid input: expected string, received undefined" }]
+  }
+  ```
+
+  ### 409 MASTER_DUPLICATE
+  ```json
+  {
+    "error": "MASTER_DUPLICATE",
+    "message": "Process code already exists",
+    "details": [{ "in": "body", "path": "process_code", "message": "Process code already exists" }]
+  }
+  ```

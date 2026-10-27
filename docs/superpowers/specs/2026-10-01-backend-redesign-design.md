@@ -274,17 +274,23 @@ UNIQUE `(tag_code, location_id)`. Upsert: UPDATE first; if 0 rows, INSERT; on du
 
 When it happens: a reader reads a tag with no active pair. For example, a tray goes in before it is registered, a tag stays on a tray after clear, or a foreign tag passes the reader.
 
-#### Other tables (kept or recreated by their own modules)
+#### Other tables (created by `create_assy_core.sql`, owned by their own modules)
 
-- `tb_assy_api_log`: all external API calls are logged here (D21, see 8.4).
-- `tb_assy_login`: B6.
-- `tb_assy_mock_as400`, `tb_assy_mock_done`: dev-only data behind the mock routes (P8).
+The old tables were dropped with the rest. B1.1 recreates them (roadmap O1) with the old columns, widened, and `DATETIME2`:
+
+| Table | Columns | Owner |
+| --- | --- | --- |
+| `tb_assy_login` | `id`, `emp_id VARCHAR(10) NOT NULL UNIQUE`, `eng_name`, `eng_surname`, `password VARCHAR(72) NOT NULL` (bcrypt), `position`. No user is seeded. | B6 |
+| `tb_assy_api_log` | `id BIGINT`, `api_type`, `method`, `url`, `request_params`, `request_body VARCHAR(MAX)`, `http_status`, `status`, `response VARCHAR(MAX)`, `error_msg`, `response_time_ms`, `created_at DATETIME2(3)`. Same names as `services/apiLogService.js`. All external API calls are logged here (D21, 8.4). | B2.1 (may change it) |
+| `tb_assy_mock_as400` | `lot_no` (NOT NULL, UNIQUE), `wos`, `brg_type`, `spec`, `qty`, `created_at`. Widths match `tb_assy_lot`. Dev-only (P8). | B2.2 |
+| `tb_assy_mock_done` | `lot_no` (NOT NULL, UNIQUE), `created_at`. Dev-only (P8). | B4.1 |
 
 ### 5.3 SQL delivery
 
-- Up: `backend/backup_DB_SP/create_assy_core.sql`. Down: `create_assy_core.down.sql`. Same pattern as `alter_process_can_clear_tag.sql`.
-- Seed (process, locations, statuses) is in the up script.
-- `backend/scripts/setup_dev_database.sql` gets the same tables + seed.
+- Up: `backend/backup_DB_SP/create_assy_core.sql`. Down: `create_assy_core.down.sql`. Same pattern as `alter_process_can_clear_tag.sql`, except: no `USE` line (you select the target DB first, because `DB_NAME` differs per machine).
+- The up script runs as one transaction (`SET XACT_ABORT ON`). If any of its tables already exists, it prints an error and changes nothing.
+- Seed (process, locations, statuses) is in the up script. It looks up ids by code, never by literal id.
+- `backend/scripts/setup_dev_database.sql` only creates the empty dev database. The schema lives only in `create_assy_core.sql`. Steps: `docs/runbooks/dev-database-setup.md`.
 - You run all SQL yourself. I show the up/down SQL first and never run it.
 - The down script drops the new tables. It needs your explicit OK each time it runs.
 - Filtered indexes need `ANSI_NULLS ON` and `QUOTED_IDENTIFIER ON` on writing sessions. The `mssql` driver default is ON. The script header notes it.

@@ -79,18 +79,23 @@ The spec leaves these open. Each one is written back into the spec in the task t
 | `backend/database.js`, `backend/test/unit/database.test.js` | Delete | Merged into `db.js` / `db.test.js` | B1.5 |
 | `backend/test/unit/db.test.js` | Modify | Gets the 3 pool tests | B1.5 |
 | `backend/routes/assembly.js`, `backend/scripts/rehash_passwords.js` | Modify | Import `getPool` from `db.js` | B1.5 |
+| `backend/README.md` | Create | Folder map, naming, layer rules, legacy list | B1.6 |
+| `backend/CLAUDE.md` | Create | One line: `@README.md` | B1.6 |
+| `overview_diagram/README.md` | Modify | Stale banner at the top only | B1.6 |
 
 ## Task status
 
 | # | Task | Model / effort / where | Status |
 | --- | --- | --- | --- |
-| B1.1 | Up / down SQL + dev DB script + runbook | Opus 5.5, high — main session | [ ] |
+| B1.1 | Up / down SQL + dev DB script + runbook | Opus 5.5, high — main session | [~] files written: `create_assy_core.sql`, `.down.sql`, `setup_dev_database.sql`, runbook, spec 5.2 / 5.3, roadmap O1; 8 old `.Table.sql` deleted. Waiting for the user's run of runbook steps 1–3. Ruling: the guard is its own batch and checks all 12 tables, not only `tb_assy_lot` (`SET NOEXEC ON` only skips the batches after it) |
 | B1.2a | `getConstraintConflict` + master repository / service: processes | Sonnet 5, medium | [ ] |
 | B1.2b | Processes HTTP: schemas, controller, routes, wiring, Bruno, delete old `/process` | Sonnet 5, medium | [ ] |
 | B1.3 | Locations: repository, service, HTTP, Bruno | Sonnet 5, medium | [ ] |
 | B1.4a | Statuses: rules, HTTP, Bruno, delete old `/status` | Sonnet 5, high | [ ] |
 | B1.4b | Delete `masterService.js`, its test, old master SP files | Haiku 4.5, low | [ ] |
-| B1.5 | Merge `database.js` into `db.js`; close B1 in the roadmap | Haiku 4.5, low | [ ] |
+| B1.5 | Merge `database.js` into `db.js` | Haiku 4.5, low | [ ] |
+| B1.6 | Backend conventions doc (`README.md` + `CLAUDE.md` import); close B1 in the roadmap | Sonnet 5, medium — main session | [ ] |
+| B1.6-lint | ESLint for the backend (file name case, layer import rules) | — | [-] DEFERRED: the backend has no ESLint yet, so this is a setup task of its own, not 2 rules. Resume as its own roadmap row: flat config, `eslint-plugin-n` for `require` bans, fix or ignore existing errors. |
 
 Where:
 
@@ -99,6 +104,7 @@ Main session (Opus 5.5, high):          B1.1 — migration needs our discussion;
 New session (Sonnet 5, medium):         B1.2a, B1.2b, B1.3 — same files, one after another
 Same session, effort high:              B1.4a — status rules are the tricky part
 Same session or new (Haiku 4.5, low):   B1.4b, B1.5 — deletions and a mechanical merge
+Main session (Sonnet 5, medium):        B1.6 — describes the pattern B1.2–B1.5 produced
 ```
 
 Handoff for the new session: "Execute `docs/superpowers/plans/2026-10-01-b1-master-data.md` from task B1.2a with `superpowers:executing-plans`, inline, one task at a time, wait for my review after each. B1.1 is done and the schema is in the dev DB."
@@ -485,6 +491,42 @@ Routes: `POST /locations` with `" GR_F2 "` → service got `location_code: 'GR_F
 
 - [ ] **Step 6: Run** `npm test` in `backend/`. Expected: all PASS, same test count as before (3 tests moved, none lost).
 
-- [ ] **Step 7: Update the roadmap** — B1 rows and status `[x]`. Add a follow-up row: "drop the `getPool` export from `db.js` when the last legacy caller is rewritten". List any `DEFERRED` / `BLOCKED` items.
+- [ ] **Step 7: Update the roadmap** — B1.5 row `[x]`. Add a follow-up row: "drop the `getPool` export from `db.js` when the last legacy caller is rewritten".
 
 - [ ] **Step 8: Hand off for review** (suggested commit: `refactor(backend): merge database.js into db.js`).
+
+---
+
+### Task B1.6: Backend conventions doc
+
+**Why:** The backend has no written pattern. New code (`modules/master/`) and legacy code (`routes/assembly.js`, `services/*.js`) sit side by side, and a reader cannot tell which one to copy. Claude loads `CLAUDE.md` on its own but not `README.md`, so `CLAUDE.md` imports the README: one source, read by both.
+
+**Runs last in B1:** it describes what B1.2–B1.5 really built, not a guess.
+
+**Files:**
+- Create: `backend/README.md` (about 40–60 lines)
+- Create: `backend/CLAUDE.md` — only `@README.md`
+- Modify: `overview_diagram/README.md` — banner at the top only, no other change
+- Modify: roadmap
+
+- [ ] **Step 1: Read the real tree** — `ls` of `backend/` and `backend/modules/master/`, `backend/shared/`, `backend/test/`. Every rule in the README must match a file that exists.
+
+- [ ] **Step 2: Write `backend/README.md`** with these sections, short lists and tables only:
+
+| Section | Content |
+| --- | --- |
+| Run | `npm install`, `npm test`; link `docs/runbooks/dev-database-setup.md`; env names from `.env.example` (no values) |
+| Folder map | One line per folder: `app.js` / `server.js`, `db.js`, `modules/<name>/`, `shared/`, `routes/` (legacy), `services/` (legacy), `scripts/`, `backup_DB_SP/`, `test/unit/`, `test/helpers/` |
+| Module layout | `modules/<name>/{routes,controller,service,repository,schemas,index}.js`: one-line duty each, and who may import whom (routes → controller → service → repository → `db.js`) |
+| Naming | camelCase files; PascalCase only for a file that exports a class (`AppError.js`); factories are `createXxx({ deps })`; tests mirror the source path as `<file>.test.js` |
+| Rules | New code imports only `db.js` (`query`, `transaction`, `typed`), never `getPool`; errors are `AppError` with a code from spec section 9; input is checked by zod in `validate`; every endpoint has a Bruno request |
+| Legacy | `routes/assembly.js`, `services/*.js`, `getPool`: do not copy, they get rewritten in later branches (roadmap) |
+| Links | Spec, roadmap, Bruno collection path |
+
+- [ ] **Step 3: Write `backend/CLAUDE.md`** with the single line `@README.md`.
+
+- [ ] **Step 4: Stale banner on `overview_diagram/README.md`** — add at the top: `> **Out of date.** Written before the 2026-10-01 backend redesign. For the backend, see backend/README.md and the redesign spec.` with both links.
+
+- [ ] **Step 5: Update the roadmap** — B1.6 and B1 status `[x]`. Add a row for the deferred backend ESLint setup (B1.6-lint). List all `DEFERRED` / `BLOCKED` items.
+
+- [ ] **Step 6: Hand off for review** (suggested commit: `docs(backend): add backend README with structure and naming conventions`).

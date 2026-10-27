@@ -11,7 +11,7 @@
 | Branch | Plan file | Status |
 | --- | --- | --- |
 | B0 Foundation | `2026-10-01-b0-foundation.md` | [x] B0.1–B0.4 done, 54 unit tests pass, server smoke test OK |
-| B1 Master data | `2026-10-01-b1-master-data.md` | [~] plan written 2026-10-27, waiting for review |
+| B1 Master data | `2026-10-01-b1-master-data.md` | [x] B1.1–B1.6 done, 107 unit tests pass. User Bruno run for processes / locations / statuses pending |
 | B2 Register / pair | written when B1 is done | [ ] |
 | B3 Scan | written when B2 is done | [ ] |
 | B4 Clear | written when B3 is done | [ ] |
@@ -43,6 +43,9 @@ Where: one **new session (Sonnet 5, medium)** for B0.1–B0.4. Handoff: "Execute
 | B1.4a | `statuses` CRUD: system statuses, CLEARED ⇔ no location rule, one status per location + Bruno. Delete old `/status` handlers. | `modules/master/*` | Sonnet 5, high | [x] `modules/master/*`, Bruno `Statuses - *.yml`, old `/status` deleted; tests 117/117. User Bruno run pending |
 | B1.4b | Delete `services/masterService.js`, its test, and old master SP files | — | Haiku 4.5, low | [x] 10 old files deleted; `asResult` moved to `services/userService.js:5`; tests 107/107 |
 | B1.5 | Merge `database.js` into `db.js` | `db.js`, `routes/assembly.js`, `scripts/rehash_passwords.js` | Haiku 4.5, low | [x] `db.js:3-32`; `database.js` and its test deleted; 107/107 |
+| B1.6 | Backend conventions doc (`README.md` + `CLAUDE.md` import); stale banner on `overview_diagram/README.md` | `backend/README.md`, `backend/CLAUDE.md` | Sonnet 5, medium | [x] `backend/README.md` (about 75 lines), `backend/CLAUDE.md`, banner at `overview_diagram/README.md:1` |
+| B1.6-lint | ESLint for the backend (file name case, layer import rules) | — | — | [-] DEFERRED — the backend has no ESLint yet, so this is a setup task of its own; resume as its own row: flat config, `eslint-plugin-n` for `require` bans, fix or ignore existing errors |
+| B1.7-fe | Frontend still calls the removed `/process` and `/status` routes (`ClearTag.tsx:85`, `mocks/handlers/admin.ts`) | `frontend/` | — | [-] DEFERRED — no task in the plan; resume with B7 (FE switch) or earlier if the admin screens are needed |
 | B1.5-f | Follow-up: drop the `getPool` export from `db.js` when the last legacy caller (`routes/assembly.js`, `scripts/rehash_passwords.js`) is rewritten | `db.js` | — | [-] DEFERRED — legacy handlers still call `getPool()`; resume when B5 / B6 remove them |
 
 Where: B1.1 in the main session (migration needs our discussion). B1.2a–B1.4a in one new session (Sonnet 5; B1.4a at high effort). B1.4b in the same session or a new one (Haiku 4.5, low). B1.2 and B1.4 were split to stay under about 5 files or 300 lines per task. Detail: `2026-10-01-b1-master-data.md`.

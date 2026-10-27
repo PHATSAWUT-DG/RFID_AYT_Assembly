@@ -1,3 +1,5 @@
+> **Out of date.** Written before the 2026-10-01 backend redesign. For the backend, see [backend/README.md](../backend/README.md) and the [redesign spec](../docs/superpowers/specs/2026-10-01-backend-redesign-design.md).
+
 # RFID Assembly System — NHT BEARING
 
 > Internal RFID tracking system for the Assembly line at NHT Bearing factory.

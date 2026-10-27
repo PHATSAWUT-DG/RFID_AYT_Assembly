@@ -99,6 +99,15 @@ test('PUT /processes/7 -> 200; the service gets a numeric id', async () => {
     assert.deepStrictEqual(calls[0].args, [7, { process_code: '1600', process_name: 'ASSY', can_clear_tag: true }]);
 });
 
+test('PUT /processes/7 without can_clear_tag -> 400 VALIDATION_ERROR, service not called', async () => {
+    const res = await call('PUT', '/processes/7', { process_code: '1600', process_name: 'ASSY' });
+    assert.strictEqual(res.status, 400);
+    const body = await res.json();
+    assert.strictEqual(body.error, 'VALIDATION_ERROR');
+    assert.deepStrictEqual(body.details.map((d) => d.path), ['can_clear_tag']);
+    assert.strictEqual(calls.length, 0);
+});
+
 test('DELETE /processes/7 -> 204 with an empty body', async () => {
     const res = await call('DELETE', '/processes/7');
     assert.strictEqual(res.status, 204);
@@ -135,6 +144,15 @@ test('PUT /locations/5 deactivates a location; the service gets a numeric id', a
     const res = await call('PUT', '/locations/5', body);
     assert.strictEqual(res.status, 200);
     assert.deepStrictEqual(calls[0].args, [5, body]);
+});
+
+test('PUT /locations/5 without is_active -> 400 VALIDATION_ERROR, service not called', async () => {
+    const res = await call('PUT', '/locations/5', { location_code: 'GR_F2', location_name: 'Gauging F2', process_id: 1 });
+    assert.strictEqual(res.status, 400);
+    const body = await res.json();
+    assert.strictEqual(body.error, 'VALIDATION_ERROR');
+    assert.deepStrictEqual(body.details.map((d) => d.path), ['is_active']);
+    assert.strictEqual(calls.length, 0);
 });
 
 test('PUT /locations/abc -> 400 VALIDATION_ERROR', async () => {

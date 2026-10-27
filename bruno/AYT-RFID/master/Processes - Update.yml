@@ -25,6 +25,7 @@ settings:
 
 docs: |-
   Update a process by id. Send the full body (same fields as Create). Returns the updated row.
+  `can_clear_tag` is required here (Create defaults it to false). A missing field is a 400.
   `:id` must be a positive integer.
 
   ### 200 Updated
@@ -33,7 +34,7 @@ docs: |-
   ```
 
   ### 400 VALIDATION_ERROR
-  Bad body, or `:id` is not a positive integer.
+  Bad or incomplete body (e.g. `can_clear_tag` missing), or `:id` is not a positive integer.
   ```json
   {
     "error": "VALIDATION_ERROR",

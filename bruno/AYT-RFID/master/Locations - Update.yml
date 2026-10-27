@@ -26,6 +26,7 @@ settings:
 
 docs: |-
   Update a location by id. Send the full body (same fields as Create). Returns the updated row.
+  `is_active` is required here (Create defaults it to true). A missing field is a 400.
   There is no delete. To retire a location, send `"is_active": false` (as in this example).
   `:id` must be a positive integer.
 
@@ -38,7 +39,7 @@ docs: |-
   ```
 
   ### 400 VALIDATION_ERROR
-  Bad body, or `:id` is not a positive integer.
+  Bad or incomplete body (e.g. `is_active` missing), or `:id` is not a positive integer.
   ```json
   {
     "error": "VALIDATION_ERROR",

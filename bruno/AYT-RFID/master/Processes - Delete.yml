@@ -5,7 +5,7 @@ info:
 
 http:
   method: DELETE
-  url: "{{urlPrefix}}/api/assembly/processes/3"
+  url: "{{urlPrefix}}/api/assembly/processes/2"
   auth: inherit
 
 settings:

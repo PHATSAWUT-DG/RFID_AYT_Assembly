@@ -10,10 +10,10 @@ http:
     type: json
     data: |-
       {
-        "status_code": "GR_F2",
+        "status_code": "GR_F2_TEST",
         "status_label": "Gauging Room F2",
         "seq": 5,
-        "location_id": 4
+        "location_id": 8
       }
   auth: inherit
 

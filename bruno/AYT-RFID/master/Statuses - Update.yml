@@ -5,15 +5,15 @@ info:
 
 http:
   method: PUT
-  url: "{{urlPrefix}}/api/assembly/statuses/1"
+  url: "{{urlPrefix}}/api/assembly/statuses/9"
   body:
     type: json
     data: |-
       {
-        "status_code": "REGISTERED",
+        "status_code": "REGISTERED_TEST",
         "status_label": "Registered (before gauging)",
         "seq": 1,
-        "location_id": 5
+        "location_id": 1
       }
   auth: inherit
 

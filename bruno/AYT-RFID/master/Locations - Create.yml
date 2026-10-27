@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "location_code": "gr_f2",
+        "location_code": "gr_f22",
         "location_name": "Gauging Room F2",
         "process_id": 1,
         "is_active": true

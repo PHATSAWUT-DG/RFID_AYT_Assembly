@@ -8,12 +8,7 @@ http:
   url: "{{urlPrefix}}/api/assembly/processes"
   body:
     type: json
-    data: |-
-      {
-        "process_code": "9999",
-        "process_name": "Test Process",
-        "can_clear_tag": false
-      }
+    data: "{}"
   auth: inherit
 
 settings:

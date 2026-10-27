@@ -1,0 +1,66 @@
+info:
+  name: Locations - Create
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{urlPrefix}}/api/assembly/locations"
+  body:
+    type: json
+    data: |-
+      {
+        "location_code": "gr_f2",
+        "location_name": "Gauging Room F2",
+        "process_id": 1,
+        "is_active": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Create a location. Returns the new row.
+  `location_code` is trimmed, 1-20 chars, unique. The case is kept (readers send lower-case codes such as `gr_f1`).
+  `location_name` is trimmed, 1-100 chars. `process_id` must be an existing process. `is_active` defaults to true.
+
+  ### 201 Created
+  ```json
+  {
+    "id": 4, "location_code": "gr_f2", "location_name": "Gauging Room F2",
+    "process_id": 1, "is_active": true, "created_at": "2026-10-27T03:00:00.000Z"
+  }
+  ```
+
+  ### 400 VALIDATION_ERROR
+  ```json
+  {
+    "error": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": [{ "in": "body", "path": "process_id", "message": "Invalid input: expected number, received undefined" }]
+  }
+  ```
+
+  ### 409 MASTER_DUPLICATE
+  ```json
+  {
+    "error": "MASTER_DUPLICATE",
+    "message": "Location code already exists",
+    "details": [{ "in": "body", "path": "location_code", "message": "Location code already exists" }]
+  }
+  ```
+
+  ### 422 MASTER_INVALID_REF
+  `process_id` does not exist.
+  ```json
+  {
+    "error": "MASTER_INVALID_REF",
+    "message": "Process does not exist",
+    "details": [{ "in": "body", "path": "process_id", "message": "Process does not exist" }]
+  }
+  ```

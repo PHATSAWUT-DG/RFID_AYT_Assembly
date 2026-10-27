@@ -1,0 +1,71 @@
+info:
+  name: Locations - Update
+  type: http
+  seq: 7
+
+http:
+  method: PUT
+  url: "{{urlPrefix}}/api/assembly/locations/4"
+  body:
+    type: json
+    data: |-
+      {
+        "location_code": "gr_f2",
+        "location_name": "Gauging Room F2",
+        "process_id": 1,
+        "is_active": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Update a location by id. Send the full body (same fields as Create). Returns the updated row.
+  There is no delete. To retire a location, send `"is_active": false` (as in this example).
+  `:id` must be a positive integer.
+
+  ### 200 Updated
+  ```json
+  {
+    "id": 4, "location_code": "gr_f2", "location_name": "Gauging Room F2",
+    "process_id": 1, "is_active": false, "created_at": "2026-10-27T03:00:00.000Z"
+  }
+  ```
+
+  ### 400 VALIDATION_ERROR
+  Bad body, or `:id` is not a positive integer.
+  ```json
+  {
+    "error": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": [{ "in": "params", "path": "id", "message": "Invalid input: expected number, received NaN" }]
+  }
+  ```
+
+  ### 404 MASTER_NOT_FOUND
+  ```json
+  { "error": "MASTER_NOT_FOUND", "message": "Location 99 not found" }
+  ```
+
+  ### 409 MASTER_DUPLICATE
+  ```json
+  {
+    "error": "MASTER_DUPLICATE",
+    "message": "Location code already exists",
+    "details": [{ "in": "body", "path": "location_code", "message": "Location code already exists" }]
+  }
+  ```
+
+  ### 422 MASTER_INVALID_REF
+  ```json
+  {
+    "error": "MASTER_INVALID_REF",
+    "message": "Process does not exist",
+    "details": [{ "in": "body", "path": "process_id", "message": "Process does not exist" }]
+  }
+  ```

@@ -36,10 +36,10 @@ Where: one **new session (Sonnet 5, medium)** for B0.1–B0.4. Handoff: "Execute
 
 | # | Task | Main files | Model / effort / where | Status |
 | --- | --- | --- | --- | --- |
-| B1.1 | Up / down SQL for all new tables + seed (spec 5.2, 5.3). You review and run it. | `backup_DB_SP/create_assy_core.sql`, `.down.sql`, `scripts/setup_dev_database.sql` | Opus 5.5, high — main session | [ ] |
-| B1.2a | `getConstraintConflict` + master repository / service for processes | `shared/sqlErrors.js`, `modules/master/{repository,service}.js` | Sonnet 5, medium | [ ] |
-| B1.2b | Processes HTTP + wiring + Bruno. Delete old `/process` handlers. | `modules/master/*`, `server.js` | Sonnet 5, medium | [ ] |
-| B1.3 | `locations` CRUD (`is_active` instead of delete) + Bruno | `modules/master/*` | Sonnet 5, medium | [ ] |
+| B1.1 | Up / down SQL for all new tables + seed (spec 5.2, 5.3). You review and run it. | `backup_DB_SP/create_assy_core.sql`, `.down.sql`, `scripts/setup_dev_database.sql` | Opus 5.5, high — main session | [x] schema run by the user, tests passed |
+| B1.2a | `getConstraintConflict` + master repository / service for processes | `shared/sqlErrors.js`, `modules/master/{repository,service}.js` | Sonnet 5, medium | [x] `shared/sqlErrors.js:13`, `modules/master/{repository,service}.js` |
+| B1.2b | Processes HTTP + wiring + Bruno. Delete old `/process` handlers. | `modules/master/*`, `server.js` | Sonnet 5, medium | [x] code, tests (73/73), Bruno, spec 7.8 / 9 done. User Bruno run pending. FE still calls `/process` (`ClearTag.tsx:85`) |
+| B1.3 | `locations` CRUD (`is_active` instead of delete) + Bruno | `modules/master/*` | Sonnet 5, medium | [x] `modules/master/*`, Bruno `Locations - *.yml`; tests 86/86. User Bruno run pending |
 | B1.4a | `statuses` CRUD: system statuses, CLEARED ⇔ no location rule, one status per location + Bruno. Delete old `/status` handlers. | `modules/master/*` | Sonnet 5, high | [ ] |
 | B1.4b | Delete `services/masterService.js`, its test, and old master SP files | — | Haiku 4.5, low | [ ] |
 

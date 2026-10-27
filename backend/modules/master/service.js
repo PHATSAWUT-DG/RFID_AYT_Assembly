@@ -1,20 +1,40 @@
 const { AppError } = require('../../shared/AppError');
 const { getUniqueViolationName, getConstraintConflict } = require('../../shared/sqlErrors');
 
-const PROCESS_UNIQUES = { UQ_master_process_code: 'process_code' };
+// uniques / refs: constraint or index name -> body field, for the error details.
+const PROCESS_RULES = {
+    uniques: { UQ_master_process_code: 'process_code' },
+    refs: {},
+    messages: {
+        duplicate: 'Process code already exists',
+        invalidRef: 'Referenced row does not exist',
+        inUse: 'Process is still used by a location',
+    },
+};
+
+const LOCATION_RULES = {
+    uniques: { UQ_master_location_code: 'location_code' },
+    refs: { FK_master_location_process: 'process_id' },
+    messages: {
+        duplicate: 'Location code already exists',
+        invalidRef: 'Process does not exist',
+        inUse: 'Location is still in use',
+    },
+};
+
+const fieldDetails = (path, message) => (path ? [{ in: 'body', path, message }] : undefined);
 
 // Maps SQL constraint errors to AppError. Anything else is rethrown unchanged.
-// uniqueFields: constraint or index name -> body field, for the error details.
-const toMasterError = (err, uniqueFields, messages) => {
+const toMasterError = (err, { uniques, refs, messages }) => {
     const uniqueName = getUniqueViolationName(err);
-    if (uniqueName && uniqueFields[uniqueName]) {
-        const path = uniqueFields[uniqueName];
+    if (uniqueName && uniques[uniqueName]) {
         return new AppError('MASTER_DUPLICATE', 409, messages.duplicate,
-            [{ in: 'body', path, message: messages.duplicate }]);
+            fieldDetails(uniques[uniqueName], messages.duplicate));
     }
     const conflict = getConstraintConflict(err);
     if (conflict?.kind === 'FOREIGN KEY') {
-        return new AppError('MASTER_INVALID_REF', 422, messages.invalidRef);
+        return new AppError('MASTER_INVALID_REF', 422, messages.invalidRef,
+            fieldDetails(refs[conflict.name], messages.invalidRef));
     }
     if (conflict?.kind === 'REFERENCE') {
         return new AppError('MASTER_IN_USE', 409, messages.inUse);
@@ -23,12 +43,8 @@ const toMasterError = (err, uniqueFields, messages) => {
 };
 
 const createMasterService = ({ repo, db }) => {
-    const processMessages = {
-        duplicate: 'Process code already exists',
-        invalidRef: 'Referenced row does not exist',
-        inUse: 'Process is still used by a location',
-    };
-    const mapProcessError = (err) => { throw toMasterError(err, PROCESS_UNIQUES, processMessages); };
+    const mapProcessError = (err) => { throw toMasterError(err, PROCESS_RULES); };
+    const mapLocationError = (err) => { throw toMasterError(err, LOCATION_RULES); };
 
     const listProcesses = () => repo.selectProcesses(db);
 
@@ -62,7 +78,31 @@ const createMasterService = ({ repo, db }) => {
         return undefined;
     };
 
-    return { listProcesses, createProcess, updateProcess, deleteProcess };
+    const listLocations = () => repo.selectLocations(db);
+
+    const createLocation = async (input) => {
+        try {
+            return await repo.insertLocation(db, input);
+        } catch (err) {
+            return mapLocationError(err);
+        }
+    };
+
+    const updateLocation = async (id, input) => {
+        let row;
+        try {
+            row = await repo.updateLocation(db, id, input);
+        } catch (err) {
+            return mapLocationError(err);
+        }
+        if (!row) throw new AppError('MASTER_NOT_FOUND', 404, `Location ${id} not found`);
+        return row;
+    };
+
+    return {
+        listProcesses, createProcess, updateProcess, deleteProcess,
+        listLocations, createLocation, updateLocation,
+    };
 };
 
 module.exports = { createMasterService };

@@ -1,0 +1,41 @@
+info:
+  name: Locations - List
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/locations"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  List locations (active and inactive), ordered by location_code.
+  Each row also has the `process_code` and `process_name` of its process.
+
+  ### 200 With rows
+  ```json
+  [
+    {
+      "id": 1, "location_code": "gr_f1", "location_name": "Gauging Room F1",
+      "process_id": 2, "is_active": true, "created_at": "2026-10-01T08:00:00.000Z",
+      "process_code": "1500", "process_name": "GAUGING"
+    }
+  ]
+  ```
+
+  ### 200 Empty
+  ```json
+  []
+  ```
+
+  ### 500 INTERNAL
+  ```json
+  { "error": "INTERNAL", "message": "Internal server error" }
+  ```

@@ -87,10 +87,10 @@ The spec leaves these open. Each one is written back into the spec in the task t
 
 | # | Task | Model / effort / where | Status |
 | --- | --- | --- | --- |
-| B1.1 | Up / down SQL + dev DB script + runbook | Opus 5.5, high — main session | [~] files written: `create_assy_core.sql`, `.down.sql`, `setup_dev_database.sql`, runbook, spec 5.2 / 5.3, roadmap O1; 8 old `.Table.sql` deleted. Waiting for the user's run of runbook steps 1–3. Ruling: the guard is its own batch and checks all 12 tables, not only `tb_assy_lot` (`SET NOEXEC ON` only skips the batches after it) |
-| B1.2a | `getConstraintConflict` + master repository / service: processes | Sonnet 5, medium | [ ] |
-| B1.2b | Processes HTTP: schemas, controller, routes, wiring, Bruno, delete old `/process` | Sonnet 5, medium | [ ] |
-| B1.3 | Locations: repository, service, HTTP, Bruno | Sonnet 5, medium | [ ] |
+| B1.1 | Up / down SQL + dev DB script + runbook | Opus 5.5, high — main session | [x] `create_assy_core.sql`, `.down.sql`, `setup_dev_database.sql`, runbook, spec 5.2 / 5.3, roadmap O1; 8 old `.Table.sql` deleted. Run by the user, tests passed. Ruling: the guard is its own batch and checks all 12 tables, not only `tb_assy_lot` (`SET NOEXEC ON` only skips the batches after it) |
+| B1.2a | `getConstraintConflict` + master repository / service: processes | Sonnet 5, medium | [x] `shared/sqlErrors.js:13`, `modules/master/{repository,service}.js`; tests 65/65 |
+| B1.2b | Processes HTTP: schemas, controller, routes, wiring, Bruno, delete old `/process` | Sonnet 5, medium | [x] `modules/master/{schemas,controller,routes,index}.js`, `server.js`, `routes/assembly.js`; tests 73/73. User Bruno run pending |
+| B1.3 | Locations: repository, service, HTTP, Bruno | Sonnet 5, medium | [x] `modules/master/*`, `bruno/AYT-RFID/master/Locations - *.yml`; tests 86/86. User Bruno run pending |
 | B1.4a | Statuses: rules, HTTP, Bruno, delete old `/status` | Sonnet 5, high | [ ] |
 | B1.4b | Delete `masterService.js`, its test, old master SP files | Haiku 4.5, low | [ ] |
 | B1.5 | Merge `database.js` into `db.js` | Haiku 4.5, low | [ ] |

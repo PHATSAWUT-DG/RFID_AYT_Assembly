@@ -56,97 +56,55 @@ const toMasterError = (err, { uniques, refs, messages }) => {
     return err;
 };
 
-const createMasterService = ({ repo, db }) => {
-    const mapProcessError = (err) => { throw toMasterError(err, PROCESS_RULES); };
-    const mapLocationError = (err) => { throw toMasterError(err, LOCATION_RULES); };
+// Runs a repo call and rethrows SQL constraint errors as AppError.
+const run = async (rules, fn) => {
+    try {
+        return await fn();
+    } catch (err) {
+        throw toMasterError(err, rules);
+    }
+};
 
+const orNotFound = (found, entity, id) => {
+    if (!found) throw new AppError('MASTER_NOT_FOUND', 404, `${entity} ${id} not found`);
+    return found;
+};
+
+const createMasterService = ({ repo, db }) => {
     const listProcesses = () => repo.selectProcesses(db);
 
-    const createProcess = async (input) => {
-        try {
-            return await repo.insertProcess(db, input);
-        } catch (err) {
-            return mapProcessError(err);
-        }
-    };
+    const createProcess = (input) => run(PROCESS_RULES, () => repo.insertProcess(db, input));
 
-    const updateProcess = async (id, input) => {
-        let row;
-        try {
-            row = await repo.updateProcess(db, id, input);
-        } catch (err) {
-            return mapProcessError(err);
-        }
-        if (!row) throw new AppError('MASTER_NOT_FOUND', 404, `Process ${id} not found`);
-        return row;
-    };
+    const updateProcess = async (id, input) =>
+        orNotFound(await run(PROCESS_RULES, () => repo.updateProcess(db, id, input)), 'Process', id);
 
     const deleteProcess = async (id) => {
-        let affected;
-        try {
-            affected = await repo.deleteProcess(db, id);
-        } catch (err) {
-            return mapProcessError(err);
-        }
-        if (affected === 0) throw new AppError('MASTER_NOT_FOUND', 404, `Process ${id} not found`);
-        return undefined;
+        const affected = await run(PROCESS_RULES, () => repo.deleteProcess(db, id));
+        orNotFound(affected !== 0, 'Process', id);
     };
 
     const listLocations = () => repo.selectLocations(db);
 
-    const createLocation = async (input) => {
-        try {
-            return await repo.insertLocation(db, input);
-        } catch (err) {
-            return mapLocationError(err);
-        }
-    };
+    const createLocation = (input) => run(LOCATION_RULES, () => repo.insertLocation(db, input));
 
-    const updateLocation = async (id, input) => {
-        let row;
-        try {
-            row = await repo.updateLocation(db, id, input);
-        } catch (err) {
-            return mapLocationError(err);
-        }
-        if (!row) throw new AppError('MASTER_NOT_FOUND', 404, `Location ${id} not found`);
-        return row;
-    };
-
-    const mapStatusError = (err) => { throw toMasterError(err, STATUS_RULES); };
+    const updateLocation = async (id, input) =>
+        orNotFound(await run(LOCATION_RULES, () => repo.updateLocation(db, id, input)), 'Location', id);
 
     const listStatuses = async () => {
         const rows = await repo.selectStatuses(db);
         return rows.map((row) => ({ ...row, is_system: isSystemStatus(row.status_code) }));
     };
 
-    const createStatus = async (input) => {
-        try {
-            return await repo.insertStatus(db, input);
-        } catch (err) {
-            return mapStatusError(err);
-        }
-    };
+    const createStatus = (input) => run(STATUS_RULES, () => repo.insertStatus(db, input));
 
-    const loadStatus = async (id) => {
-        const current = await repo.selectStatusById(db, id);
-        if (!current) throw new AppError('MASTER_NOT_FOUND', 404, `Status ${id} not found`);
-        return current;
-    };
+    const loadStatus = async (id) => orNotFound(await repo.selectStatusById(db, id), 'Status', id);
 
     const updateStatus = async (id, input) => {
         const current = await loadStatus(id);
         if (isSystemStatus(current.status_code) && input.status_code !== current.status_code) {
             throw new AppError('MASTER_IN_USE', 409, `System status ${current.status_code} cannot change its code`);
         }
-        let row;
-        try {
-            row = await repo.updateStatus(db, id, input);
-        } catch (err) {
-            return mapStatusError(err);
-        }
-        if (!row) throw new AppError('MASTER_NOT_FOUND', 404, `Status ${id} not found`);
-        return row;
+        return orNotFound(await run(STATUS_RULES, () => repo.updateStatus(db, id, input)), 'Status', id);
     };
 
     const deleteStatus = async (id) => {
@@ -154,14 +112,8 @@ const createMasterService = ({ repo, db }) => {
         if (isSystemStatus(current.status_code)) {
             throw new AppError('MASTER_IN_USE', 409, `System status ${current.status_code} cannot be deleted`);
         }
-        let affected;
-        try {
-            affected = await repo.deleteStatus(db, id);
-        } catch (err) {
-            return mapStatusError(err);
-        }
-        if (affected === 0) throw new AppError('MASTER_NOT_FOUND', 404, `Status ${id} not found`);
-        return undefined;
+        const affected = await run(STATUS_RULES, () => repo.deleteStatus(db, id));
+        orNotFound(affected !== 0, 'Status', id);
     };
 
     return {

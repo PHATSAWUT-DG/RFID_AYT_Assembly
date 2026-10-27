@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs');
-const { sql, getPool } = require('../database');
+const { sql, getPool } = require('../db');
 const axios = require('axios');
 const db = require('../db');
 const { insertApiLog } = require('../services/apiLogService');

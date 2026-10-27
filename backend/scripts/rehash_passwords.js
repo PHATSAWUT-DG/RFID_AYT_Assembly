@@ -3,7 +3,7 @@
 //   cd backend && node scripts/rehash_passwords.js
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
-const { getPool, sql } = require('../database');
+const { getPool, sql } = require('../db');
 
 const ALREADY_HASHED = /^\$2[aby]\$/;
 

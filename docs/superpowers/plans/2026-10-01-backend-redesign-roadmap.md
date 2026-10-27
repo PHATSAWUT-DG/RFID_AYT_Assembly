@@ -42,6 +42,8 @@ Where: one **new session (Sonnet 5, medium)** for B0.1–B0.4. Handoff: "Execute
 | B1.3 | `locations` CRUD (`is_active` instead of delete) + Bruno | `modules/master/*` | Sonnet 5, medium | [x] `modules/master/*`, Bruno `Locations - *.yml`; tests 86/86. User Bruno run pending |
 | B1.4a | `statuses` CRUD: system statuses, CLEARED ⇔ no location rule, one status per location + Bruno. Delete old `/status` handlers. | `modules/master/*` | Sonnet 5, high | [x] `modules/master/*`, Bruno `Statuses - *.yml`, old `/status` deleted; tests 117/117. User Bruno run pending |
 | B1.4b | Delete `services/masterService.js`, its test, and old master SP files | — | Haiku 4.5, low | [x] 10 old files deleted; `asResult` moved to `services/userService.js:5`; tests 107/107 |
+| B1.5 | Merge `database.js` into `db.js` | `db.js`, `routes/assembly.js`, `scripts/rehash_passwords.js` | Haiku 4.5, low | [x] `db.js:3-32`; `database.js` and its test deleted; 107/107 |
+| B1.5-f | Follow-up: drop the `getPool` export from `db.js` when the last legacy caller (`routes/assembly.js`, `scripts/rehash_passwords.js`) is rewritten | `db.js` | — | [-] DEFERRED — legacy handlers still call `getPool()`; resume when B5 / B6 remove them |
 
 Where: B1.1 in the main session (migration needs our discussion). B1.2a–B1.4a in one new session (Sonnet 5; B1.4a at high effort). B1.4b in the same session or a new one (Haiku 4.5, low). B1.2 and B1.4 were split to stay under about 5 files or 300 lines per task. Detail: `2026-10-01-b1-master-data.md`.
 

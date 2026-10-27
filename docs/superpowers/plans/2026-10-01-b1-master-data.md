@@ -30,7 +30,7 @@ The spec leaves these open. Each one is written back into the spec in the task t
 
 | # | Decision | Why | Spec edit in |
 | --- | --- | --- | --- |
-| M1 | The up script has **no `USE`** line. You pick the database first (SSMS dropdown or `sqlcmd -d`). | `DB_NAME` differs per machine (`database.js:6`). A hard-coded `USE` can create the tables in the wrong DB. | B1.1 (5.3) |
+| M1 | The up script has **no `USE`** line. You pick the database first (SSMS dropdown or `sqlcmd -d`). | `DB_NAME` differs per machine (`db.js:6`). A hard-coded `USE` can create the tables in the wrong DB. | B1.1 (5.3) |
 | M2 | `setup_dev_database.sql` only creates the empty database. Then you run `create_assy_core.sql` on it. | One source for the schema. A copy in two files drifts. (Spec 5.3 says "same tables + seed" in both.) | B1.1 (5.3) |
 | M3 | The up script is **one transaction** (`SET XACT_ABORT ON`), with a guard that stops if `tb_assy_lot` already exists. | All or nothing. A second run changes nothing. | B1.1 (5.3) |
 | M4 | O1: the up script also recreates `tb_assy_login`, `tb_assy_api_log`, `tb_assy_mock_as400`, `tb_assy_mock_done` (old columns, widened, `DATETIME2`). `tb_assy_login.emp_id` becomes `NOT NULL UNIQUE`. No user is seeded (no secrets in the repo); you create the first user with Bruno `User - Create`. | Login works again before B6; B2 / B4 need the log and mock tables. | B1.1 (5.2 "Other tables") |
@@ -93,7 +93,7 @@ The spec leaves these open. Each one is written back into the spec in the task t
 | B1.3 | Locations: repository, service, HTTP, Bruno | Sonnet 5, medium | [x] `modules/master/*`, `bruno/AYT-RFID/master/Locations - *.yml`; tests 86/86. User Bruno run pending |
 | B1.4a | Statuses: rules, HTTP, Bruno, delete old `/status` | Sonnet 5, high | [x] code, tests (117/117), Bruno, spec 7.8 / 5.2 done. User Bruno run pending |
 | B1.4b | Delete `masterService.js`, its test, old master SP files | Haiku 4.5, low | [x] 10 files deleted; `asResult` moved to `userService.js:5`; tests 107/107 |
-| B1.5 | Merge `database.js` into `db.js` | Haiku 4.5, low | [ ] |
+| B1.5 | Merge `database.js` into `db.js` | Haiku 4.5, low | [x] `db.js:3-32`; `database.js` and its test deleted; 3 tests moved to `db.test.js`; 107/107 |
 | B1.6 | Backend conventions doc (`README.md` + `CLAUDE.md` import); close B1 in the roadmap | Sonnet 5, medium — main session | [ ] |
 | B1.6-lint | ESLint for the backend (file name case, layer import rules) | — | [-] DEFERRED: the backend has no ESLint yet, so this is a setup task of its own, not 2 rules. Resume as its own roadmap row: flat config, `eslint-plugin-n` for `require` bans, fix or ignore existing errors. |
 

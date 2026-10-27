@@ -49,10 +49,10 @@ docs: |-
   { "error": "MASTER_NOT_FOUND", "message": "Status 99 not found" }
   ```
 
-  ### 409 MASTER_IN_USE
+  ### 409 MASTER_SYSTEM_LOCKED
   A system status changed its code.
   ```json
-  { "error": "MASTER_IN_USE", "message": "System status REGISTERED cannot change its code" }
+  { "error": "MASTER_SYSTEM_LOCKED", "message": "System status REGISTERED cannot change its code" }
   ```
 
   ### 409 MASTER_DUPLICATE

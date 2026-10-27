@@ -235,11 +235,11 @@ test('updateStatus: system status, same code, new label -> allowed', async () =>
     assert.deepStrictEqual(calls[1], { name: 'updateStatus', args: [db, 1, input] });
 });
 
-test('updateStatus: system status, new code -> MASTER_IN_USE, repo update not called', async () => {
+test('updateStatus: system status, new code -> MASTER_SYSTEM_LOCKED, repo update not called', async () => {
     const { repo, calls } = fakeRepo({ selectStatusById: registered });
     const input = { status_code: 'REG2', status_label: 'Registered', seq: 1, location_id: 1 };
     await assert.rejects(createMasterService({ repo, db }).updateStatus(1, input), (err) => {
-        assert.strictEqual(err.code, 'MASTER_IN_USE');
+        assert.strictEqual(err.code, 'MASTER_SYSTEM_LOCKED');
         assert.strictEqual(err.httpStatus, 409);
         assert.strictEqual(err.message, 'System status REGISTERED cannot change its code');
         return true;
@@ -273,10 +273,10 @@ test('deleteStatus: unknown id -> MASTER_NOT_FOUND, repo delete not called', asy
     assert.deepStrictEqual(calls.map((c) => c.name), ['selectStatusById']);
 });
 
-test('deleteStatus: system status -> MASTER_IN_USE, repo delete not called', async () => {
+test('deleteStatus: system status -> MASTER_SYSTEM_LOCKED, repo delete not called', async () => {
     const { repo, calls } = fakeRepo({ selectStatusById: cleared });
     await assert.rejects(createMasterService({ repo, db }).deleteStatus(4), (err) => {
-        assert.strictEqual(err.code, 'MASTER_IN_USE');
+        assert.strictEqual(err.code, 'MASTER_SYSTEM_LOCKED');
         assert.strictEqual(err.httpStatus, 409);
         assert.strictEqual(err.message, 'System status CLEARED cannot be deleted');
         return true;

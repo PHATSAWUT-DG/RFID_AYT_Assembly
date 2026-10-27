@@ -573,7 +573,8 @@ Body: `{ "error": "<CODE>", "message": "<text>", "details"?: {...} }`. Same `err
 | `PAIRING_CLOSED` | 409 | Manual clear on a lot with no active pair |
 | `TAG_LOT_MISMATCH` | 409 | Manual clear: the tag is not on this lot |
 | `PROCESS_NOT_CLEARABLE` | 409 | Manual clear: current process has `can_clear_tag = 0` |
-| `MASTER_IN_USE` | 409 | Delete a referenced master row, or a system status. Also: change the code of a system status |
+| `MASTER_IN_USE` | 409 | Delete a master row that other rows still reference (FK) |
+| `MASTER_SYSTEM_LOCKED` | 409 | Change the code of, or delete, a system status (`REGISTERED`, `CLEARED`) |
 | `MASTER_DUPLICATE` | 409 | Master code already exists, or a location already has a status. `details[0].path` = the field |
 | `MASTER_NOT_FOUND` | 404 | Master row id not found (update / delete) |
 | `MASTER_INVALID_REF` | 422 | `process_id` or `location_id` points to a row that does not exist |

@@ -102,7 +102,7 @@ const createMasterService = ({ repo, db }) => {
     const updateStatus = async (id, input) => {
         const current = await loadStatus(id);
         if (isSystemStatus(current.status_code) && input.status_code !== current.status_code) {
-            throw new AppError('MASTER_IN_USE', 409, `System status ${current.status_code} cannot change its code`);
+            throw new AppError('MASTER_SYSTEM_LOCKED', 409, `System status ${current.status_code} cannot change its code`);
         }
         return orNotFound(await run(STATUS_RULES, () => repo.updateStatus(db, id, input)), 'Status', id);
     };
@@ -110,7 +110,7 @@ const createMasterService = ({ repo, db }) => {
     const deleteStatus = async (id) => {
         const current = await loadStatus(id);
         if (isSystemStatus(current.status_code)) {
-            throw new AppError('MASTER_IN_USE', 409, `System status ${current.status_code} cannot be deleted`);
+            throw new AppError('MASTER_SYSTEM_LOCKED', 409, `System status ${current.status_code} cannot be deleted`);
         }
         const affected = await run(STATUS_RULES, () => repo.deleteStatus(db, id));
         orNotFound(affected !== 0, 'Status', id);

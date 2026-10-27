@@ -37,10 +37,10 @@ docs: |-
   { "error": "MASTER_NOT_FOUND", "message": "Status 99 not found" }
   ```
 
-  ### 409 MASTER_IN_USE
+  ### 409 MASTER_SYSTEM_LOCKED
   System status:
   ```json
-  { "error": "MASTER_IN_USE", "message": "System status CLEARED cannot be deleted" }
+  { "error": "MASTER_SYSTEM_LOCKED", "message": "System status CLEARED cannot be deleted" }
   ```
   Used by a lot or an event:
   ```json

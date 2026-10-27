@@ -10,8 +10,8 @@
 
 | Branch | Plan file | Status |
 | --- | --- | --- |
-| B0 Foundation | `2026-10-01-b0-foundation.md` | [ ] |
-| B1 Master data | written when B0 is done | [ ] |
+| B0 Foundation | `2026-10-01-b0-foundation.md` | [x] B0.1–B0.4 done, 54 unit tests pass, server smoke test OK |
+| B1 Master data | `2026-10-01-b1-master-data.md` | [~] plan written 2026-10-27, waiting for review |
 | B2 Register / pair | written when B1 is done | [ ] |
 | B3 Scan | written when B2 is done | [ ] |
 | B4 Clear | written when B3 is done | [ ] |
@@ -28,7 +28,7 @@
 | B0.1 | Lazy DB pool: no connection at `require` time, retry after a failed connect | `database.js`, `db.js`, `routes/assembly.js`, `scripts/rehash_passwords.js` | Sonnet 5, medium | [x] `database.js:15` `getPool`/`createPoolGetter`; callers switched; 3 new + 33 total unit tests pass |
 | B0.2 | `AppError` + central error handler | `shared/AppError.js`, `shared/errorHandler.js` | Sonnet 5, medium | [x] `shared/errorHandler.js:11`; 7 new + 40 total unit tests pass |
 | B0.3 | `validate()` (zod) + `sqlErrors` | `shared/validate.js`, `shared/sqlErrors.js`, `package.json` | Sonnet 5, medium | [x] `shared/validate.js:8`, `shared/sqlErrors.js:6`; 8 new + 48 total unit tests pass |
-| B0.4 | `app.js` / `server.js` split, old polling removed, JSON 404, HTTP test helper | `app.js`, `server.js`, `test/helpers/startApp.js` | Sonnet 5, medium | [~] code done (`app.js:6`, `server.js`); 6 new + 54 total unit tests pass; user smoke test of `node server.js` pending |
+| B0.4 | `app.js` / `server.js` split, old polling removed, JSON 404, HTTP test helper | `app.js`, `server.js`, `test/helpers/startApp.js` | Sonnet 5, medium | [x] `app.js:6`, `server.js`; 6 new + 54 total unit tests pass; user smoke test of `node server.js` OK (2026-10-27) |
 
 Where: one **new session (Sonnet 5, medium)** for B0.1–B0.4. Handoff: "Execute `docs/superpowers/plans/2026-10-01-b0-foundation.md` with `superpowers:executing-plans`, inline, one task at a time, wait for my review after each."
 
@@ -37,11 +37,13 @@ Where: one **new session (Sonnet 5, medium)** for B0.1–B0.4. Handoff: "Execute
 | # | Task | Main files | Model / effort / where | Status |
 | --- | --- | --- | --- | --- |
 | B1.1 | Up / down SQL for all new tables + seed (spec 5.2, 5.3). You review and run it. | `backup_DB_SP/create_assy_core.sql`, `.down.sql`, `scripts/setup_dev_database.sql` | Opus 5.5, high — main session | [ ] |
-| B1.2 | `master/processes` CRUD + Bruno. Delete old `/process` handlers. | `modules/master/*` | Sonnet 5, medium | [ ] |
-| B1.3 | `master/locations` CRUD (`is_active` instead of delete) + Bruno | `modules/master/*` | Sonnet 5, medium | [ ] |
-| B1.4 | `master/statuses` CRUD: system statuses, CLEARED ⇔ no location rule, one status per location + Bruno. Delete old `/status` handlers, `services/masterService.js`, its test, and old master SP files. | `modules/master/*` | Sonnet 5, high | [ ] |
+| B1.2a | `getConstraintConflict` + master repository / service for processes | `shared/sqlErrors.js`, `modules/master/{repository,service}.js` | Sonnet 5, medium | [ ] |
+| B1.2b | Processes HTTP + wiring + Bruno. Delete old `/process` handlers. | `modules/master/*`, `server.js` | Sonnet 5, medium | [ ] |
+| B1.3 | `locations` CRUD (`is_active` instead of delete) + Bruno | `modules/master/*` | Sonnet 5, medium | [ ] |
+| B1.4a | `statuses` CRUD: system statuses, CLEARED ⇔ no location rule, one status per location + Bruno. Delete old `/status` handlers. | `modules/master/*` | Sonnet 5, high | [ ] |
+| B1.4b | Delete `services/masterService.js`, its test, and old master SP files | — | Haiku 4.5, low | [ ] |
 
-Where: B1.1 in the main session (migration needs our discussion). B1.2–B1.4 in one new session (Sonnet 5).
+Where: B1.1 in the main session (migration needs our discussion). B1.2a–B1.4a in one new session (Sonnet 5; B1.4a at high effort). B1.4b in the same session or a new one (Haiku 4.5, low). B1.2 and B1.4 were split to stay under about 5 files or 300 lines per task. Detail: `2026-10-01-b1-master-data.md`.
 
 ## B2 Register / pair
 

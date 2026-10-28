@@ -6,7 +6,7 @@ const { AppError } = require('../../shared/AppError');
 const { startApp } = require('../helpers/startApp');
 
 const logged = [];
-const logger = { error: (...args) => logged.push(args) };
+const logger = { error: (...args) => logged.push(args), info: () => {} };
 
 const router = express.Router();
 router.get('/ok', (req, res) => res.json({ ok: true }));

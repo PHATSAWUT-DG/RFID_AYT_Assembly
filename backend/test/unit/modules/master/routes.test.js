@@ -44,7 +44,7 @@ const service = {
 let server;
 before(async () => {
     const apiRouter = createMasterRoutes({ controller: createMasterController({ service }) });
-    server = await startApp(createApp({ apiRouter, logger: { error() {} } }));
+    server = await startApp(createApp({ apiRouter, logger: { error() {}, info() {} } }));
 });
 after(() => server.close());
 beforeEach(() => { calls = []; nextError = null; });

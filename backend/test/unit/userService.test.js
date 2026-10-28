@@ -9,7 +9,7 @@ const {
 test('verifyLogin returns the user when the password matches its hash', async () => {
     const hash = bcrypt.hashSync('secret', 10);
     const db = createFakeDb([{ recordset: [{ id: 1, emp_id: 'E1', eng_name: 'A', eng_surname: 'B',
-                                             password: hash, position: 'admin' }] }]);
+        password: hash, position: 'admin' }] }]);
     const user = await verifyLogin(db, 'E1', 'secret');
     assert.strictEqual(user.emp_id, 'E1');
     assert.strictEqual(user.password, undefined, 'password must not be returned');
@@ -17,7 +17,7 @@ test('verifyLogin returns the user when the password matches its hash', async ()
 
 test('verifyLogin returns null on a wrong password', async () => {
     const db = createFakeDb([{ recordset: [{ id: 1, emp_id: 'E1',
-                                             password: bcrypt.hashSync('secret', 10) }] }]);
+        password: bcrypt.hashSync('secret', 10) }] }]);
     assert.strictEqual(await verifyLogin(db, 'E1', 'wrong'), null);
 });
 
@@ -35,7 +35,7 @@ test('listUsers returns rows', async () => {
 test('createUser stores a hash, never the plaintext', async () => {
     const db = createFakeDb([{ rowsAffected: [1] }]);
     await createUser(db, { emp_id: 'E1', eng_name: 'A', eng_surname: 'B',
-                           password: 'secret', position: 'user' });
+        password: 'secret', position: 'user' });
     const stored = db.calls[0].params.password;
     assert.notStrictEqual(stored, 'secret');
     assert.match(stored, /^\$2[aby]\$/);

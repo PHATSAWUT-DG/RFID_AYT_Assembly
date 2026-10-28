@@ -8,8 +8,8 @@ const dbConfig = {
     password: process.env.DB_PASSWORD,
     options: {
         encrypt: true,
-        trustServerCertificate: true
-    }
+        trustServerCertificate: true,
+    },
 };
 
 // Connect on first use, not at require time, so loading this module (e.g. in

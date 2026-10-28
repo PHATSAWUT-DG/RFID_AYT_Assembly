@@ -33,7 +33,7 @@ const updateProcess = async (db, id, { process_code, process_name, can_clear_tag
 };
 
 const deleteProcess = async (db, id) => {
-    const out = await db.query(`DELETE FROM tb_master_process WHERE id = @id`, { id });
+    const out = await db.query('DELETE FROM tb_master_process WHERE id = @id', { id });
     return out.rowsAffected[0];
 };
 
@@ -108,7 +108,7 @@ const updateStatus = async (db, id, { status_code, status_label, seq, location_i
 };
 
 const deleteStatus = async (db, id) => {
-    const out = await db.query(`DELETE FROM tb_master_assy_status WHERE id = @id`, { id });
+    const out = await db.query('DELETE FROM tb_master_assy_status WHERE id = @id', { id });
     return out.rowsAffected[0];
 };
 

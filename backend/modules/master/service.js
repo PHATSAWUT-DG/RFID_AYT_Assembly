@@ -36,7 +36,7 @@ const STATUS_RULES = {
 const SYSTEM_STATUS_CODES = ['REGISTERED', 'CLEARED'];
 const isSystemStatus = (code) => SYSTEM_STATUS_CODES.includes(code);
 
-const fieldDetails =(path, message) => (path ? [{ in: 'body', path, message }] : undefined);
+const fieldDetails = (path, message) => (path ? [{ in: 'body', path, message }] : undefined);
 
 // Maps SQL constraint errors to AppError. Anything else is rethrown unchanged.
 const toMasterError = (err, { uniques, refs, messages }) => {

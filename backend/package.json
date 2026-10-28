@@ -6,7 +6,9 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test \"test/unit/**/*.test.js\" \"test/helpers/**/*.test.js\"",
-    "test:integration": "node --test \"test/integration/**/*.test.js\""
+    "test:integration": "node --test \"test/integration/**/*.test.js\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [],
   "author": "",
@@ -20,5 +22,11 @@
     "express": "^5.2.1",
     "mssql": "^12.7.0",
     "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0"
   }
 }

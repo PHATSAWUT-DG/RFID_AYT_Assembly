@@ -1,34 +1,36 @@
+const { sendData } = require('../../shared/respond');
+
 const createMasterController = ({ service }) => ({
     listProcesses: async (req, res) => {
-        res.json(await service.listProcesses());
+        sendData(res, await service.listProcesses());
     },
     createProcess: async (req, res) => {
-        res.status(201).json(await service.createProcess(req.valid.body));
+        sendData(res, await service.createProcess(req.valid.body), { status: 201 });
     },
     updateProcess: async (req, res) => {
-        res.json(await service.updateProcess(req.valid.params.id, req.valid.body));
+        sendData(res, await service.updateProcess(req.valid.params.id, req.valid.body));
     },
     deleteProcess: async (req, res) => {
         await service.deleteProcess(req.valid.params.id);
         res.status(204).end();
     },
     listLocations: async (req, res) => {
-        res.json(await service.listLocations());
+        sendData(res, await service.listLocations());
     },
     createLocation: async (req, res) => {
-        res.status(201).json(await service.createLocation(req.valid.body));
+        sendData(res, await service.createLocation(req.valid.body), { status: 201 });
     },
     updateLocation: async (req, res) => {
-        res.json(await service.updateLocation(req.valid.params.id, req.valid.body));
+        sendData(res, await service.updateLocation(req.valid.params.id, req.valid.body));
     },
     listStatuses: async (req, res) => {
-        res.json(await service.listStatuses());
+        sendData(res, await service.listStatuses());
     },
     createStatus: async (req, res) => {
-        res.status(201).json(await service.createStatus(req.valid.body));
+        sendData(res, await service.createStatus(req.valid.body), { status: 201 });
     },
     updateStatus: async (req, res) => {
-        res.json(await service.updateStatus(req.valid.params.id, req.valid.body));
+        sendData(res, await service.updateStatus(req.valid.params.id, req.valid.body));
     },
     deleteStatus: async (req, res) => {
         await service.deleteStatus(req.valid.params.id);

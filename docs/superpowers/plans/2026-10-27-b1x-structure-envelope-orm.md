@@ -59,9 +59,9 @@ Tasks 1–4 have value even if you later drop Sequelize. Tasks 5–7 only matter
 
 | # | Task | Status |
 | --- | --- | --- |
-| 1 | ESLint for the backend (was roadmap B1.6-lint) | [ ] |
-| 2 | Request id middleware | [ ] |
-| 3 | Response envelope | [ ] |
+| 1 | ESLint for the backend (was roadmap B1.6-lint) | [x] `backend/eslint.config.js`; lint 0 errors |
+| 2 | Request id middleware | [x] `backend/shared/requestId.js`, mounted `backend/app.js:8` |
+| 3 | Response envelope | [x] `backend/shared/respond.js`, `backend/shared/errorHandler.js`; Bruno run by you pending |
 | 4 | Folder per resource + `assertAffected` + README rules | [ ] |
 | 5 | Integration tests on the raw-SQL master repositories | [ ] |
 | 6 | Sequelize setup + processes repository | [ ] |

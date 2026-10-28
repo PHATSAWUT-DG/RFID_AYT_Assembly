@@ -21,18 +21,20 @@ docs: |-
 
   ### 200 With rows
   ```json
-  [
-    { "id": 1, "process_code": "1400", "process_name": "BEFORE ISSUE", "can_clear_tag": false },
-    { "id": 2, "process_code": "1500", "process_name": "GAUGING", "can_clear_tag": true }
-  ]
+  {
+    "data": [
+      { "id": 1, "process_code": "1400", "process_name": "BEFORE ISSUE", "can_clear_tag": false },
+      { "id": 2, "process_code": "1500", "process_name": "GAUGING", "can_clear_tag": true }
+    ]
+  }
   ```
 
   ### 200 Empty
   ```json
-  []
+  { "data": [] }
   ```
 
   ### 500 INTERNAL
   ```json
-  { "error": "INTERNAL", "message": "Internal server error" }
+  { "error": { "code": "INTERNAL", "message": "Internal server error", "request_id": "3f6c1b0e-0000-4000-8000-000000000001" } }
   ```

@@ -2,3 +2,10 @@ info:
   name: master
   type: folder
   seq: 1
+
+docs: |-
+  Response shape for every request in this folder.
+
+  Success: `{ "data": <row or array> }`. `DELETE` returns 204 with no body.
+  Error: `{ "error": { "code", "message", "details"?, "request_id" } }`.
+  `request_id` is also sent in the `X-Request-Id` response header. Give it to the developer when you report a problem.

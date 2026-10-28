@@ -32,26 +32,34 @@ docs: |-
   ### 201 Created
   ```json
   {
-    "id": 4, "location_code": "gr_f2", "location_name": "Gauging Room F2",
-    "process_id": 1, "is_active": true, "created_at": "2026-10-27T03:00:00.000Z"
+    "data": {
+      "id": 4, "location_code": "gr_f2", "location_name": "Gauging Room F2",
+      "process_id": 1, "is_active": true, "created_at": "2026-10-27T03:00:00.000Z"
+    }
   }
   ```
 
   ### 400 VALIDATION_ERROR
   ```json
   {
-    "error": "VALIDATION_ERROR",
-    "message": "Request validation failed",
-    "details": [{ "in": "body", "path": "process_id", "message": "Invalid input: expected number, received undefined" }]
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "Request validation failed",
+      "details": [{ "in": "body", "path": "process_id", "message": "Invalid input: expected number, received undefined" }],
+      "request_id": "3f6c1b0e-0000-4000-8000-000000000001"
+    }
   }
   ```
 
   ### 409 MASTER_DUPLICATE
   ```json
   {
-    "error": "MASTER_DUPLICATE",
-    "message": "Location code already exists",
-    "details": [{ "in": "body", "path": "location_code", "message": "Location code already exists" }]
+    "error": {
+      "code": "MASTER_DUPLICATE",
+      "message": "Location code already exists",
+      "details": [{ "in": "body", "path": "location_code", "message": "Location code already exists" }],
+      "request_id": "3f6c1b0e-0000-4000-8000-000000000001"
+    }
   }
   ```
 
@@ -59,8 +67,11 @@ docs: |-
   `process_id` does not exist.
   ```json
   {
-    "error": "MASTER_INVALID_REF",
-    "message": "Process does not exist",
-    "details": [{ "in": "body", "path": "process_id", "message": "Process does not exist" }]
+    "error": {
+      "code": "MASTER_INVALID_REF",
+      "message": "Process does not exist",
+      "details": [{ "in": "body", "path": "process_id", "message": "Process does not exist" }],
+      "request_id": "3f6c1b0e-0000-4000-8000-000000000001"
+    }
   }
   ```

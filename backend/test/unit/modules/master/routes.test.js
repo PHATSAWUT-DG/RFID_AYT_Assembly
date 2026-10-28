@@ -58,21 +58,21 @@ const call = (method, path, body) => fetch(`${server.baseUrl}/api/assembly${path
 test('GET /processes -> 200 with the service rows', async () => {
     const res = await call('GET', '/processes');
     assert.strictEqual(res.status, 200);
-    assert.deepStrictEqual(await res.json(), [processRow]);
+    assert.deepStrictEqual(await res.json(), { data: [processRow] });
 });
 
 test('POST /processes trims the code and defaults can_clear_tag to false', async () => {
     const res = await call('POST', '/processes', { process_code: ' 1600 ', process_name: 'ASSY' });
     assert.strictEqual(res.status, 201);
-    assert.deepStrictEqual(await res.json(), processRow);
+    assert.deepStrictEqual(await res.json(), { data: processRow });
     assert.deepStrictEqual(calls[0].args, [{ process_code: '1600', process_name: 'ASSY', can_clear_tag: false }]);
 });
 
 test('POST /processes with an empty body -> 400 VALIDATION_ERROR, service not called', async () => {
     const res = await call('POST', '/processes', {});
     assert.strictEqual(res.status, 400);
-    const body = await res.json();
-    assert.strictEqual(body.error, 'VALIDATION_ERROR');
+    const body = (await res.json()).error;
+    assert.strictEqual(body.code, 'VALIDATION_ERROR');
     assert.deepStrictEqual(body.details.map((d) => d.path).sort(), ['process_code', 'process_name']);
     assert.strictEqual(calls.length, 0);
 });
@@ -81,7 +81,7 @@ test('PUT /processes/:id with a bad id -> 400 VALIDATION_ERROR', async () => {
     for (const id of ['abc', '0', '1.5']) {
         const res = await call('PUT', `/processes/${id}`, { process_code: '1600', process_name: 'ASSY' });
         assert.strictEqual(res.status, 400, `id ${id}`);
-        assert.strictEqual((await res.json()).error, 'VALIDATION_ERROR');
+        assert.strictEqual((await res.json()).error.code, 'VALIDATION_ERROR');
     }
     assert.strictEqual(calls.length, 0);
 });
@@ -95,15 +95,15 @@ test('DELETE /processes/:id with a bad id -> 400 VALIDATION_ERROR', async () => 
 test('PUT /processes/7 -> 200; the service gets a numeric id', async () => {
     const res = await call('PUT', '/processes/7', { process_code: '1600', process_name: 'ASSY', can_clear_tag: true });
     assert.strictEqual(res.status, 200);
-    assert.deepStrictEqual(await res.json(), processRow);
+    assert.deepStrictEqual(await res.json(), { data: processRow });
     assert.deepStrictEqual(calls[0].args, [7, { process_code: '1600', process_name: 'ASSY', can_clear_tag: true }]);
 });
 
 test('PUT /processes/7 without can_clear_tag -> 400 VALIDATION_ERROR, service not called', async () => {
     const res = await call('PUT', '/processes/7', { process_code: '1600', process_name: 'ASSY' });
     assert.strictEqual(res.status, 400);
-    const body = await res.json();
-    assert.strictEqual(body.error, 'VALIDATION_ERROR');
+    const body = (await res.json()).error;
+    assert.strictEqual(body.code, 'VALIDATION_ERROR');
     assert.deepStrictEqual(body.details.map((d) => d.path), ['can_clear_tag']);
     assert.strictEqual(calls.length, 0);
 });
@@ -118,13 +118,13 @@ test('DELETE /processes/7 -> 204 with an empty body', async () => {
 test('GET /locations -> 200 with the service rows', async () => {
     const res = await call('GET', '/locations');
     assert.strictEqual(res.status, 200);
-    assert.deepStrictEqual(await res.json(), [locationRow]);
+    assert.deepStrictEqual(await res.json(), { data: [locationRow] });
 });
 
 test('POST /locations trims the code, keeps its case, and defaults is_active to true', async () => {
     const res = await call('POST', '/locations', { location_code: ' GR_F2 ', location_name: 'Gauging F2', process_id: 1 });
     assert.strictEqual(res.status, 201);
-    assert.deepStrictEqual(await res.json(), locationRow);
+    assert.deepStrictEqual(await res.json(), { data: locationRow });
     assert.deepStrictEqual(calls[0].args, [{
         location_code: 'GR_F2', location_name: 'Gauging F2', process_id: 1, is_active: true,
     }]);
@@ -133,8 +133,8 @@ test('POST /locations trims the code, keeps its case, and defaults is_active to 
 test('POST /locations without process_id -> 400 VALIDATION_ERROR, service not called', async () => {
     const res = await call('POST', '/locations', { location_code: 'GR_F2', location_name: 'Gauging F2' });
     assert.strictEqual(res.status, 400);
-    const body = await res.json();
-    assert.strictEqual(body.error, 'VALIDATION_ERROR');
+    const body = (await res.json()).error;
+    assert.strictEqual(body.code, 'VALIDATION_ERROR');
     assert.deepStrictEqual(body.details.map((d) => d.path), ['process_id']);
     assert.strictEqual(calls.length, 0);
 });
@@ -149,8 +149,8 @@ test('PUT /locations/5 deactivates a location; the service gets a numeric id', a
 test('PUT /locations/5 without is_active -> 400 VALIDATION_ERROR, service not called', async () => {
     const res = await call('PUT', '/locations/5', { location_code: 'GR_F2', location_name: 'Gauging F2', process_id: 1 });
     assert.strictEqual(res.status, 400);
-    const body = await res.json();
-    assert.strictEqual(body.error, 'VALIDATION_ERROR');
+    const body = (await res.json()).error;
+    assert.strictEqual(body.code, 'VALIDATION_ERROR');
     assert.deepStrictEqual(body.details.map((d) => d.path), ['is_active']);
     assert.strictEqual(calls.length, 0);
 });
@@ -164,27 +164,27 @@ test('PUT /locations/abc -> 400 VALIDATION_ERROR', async () => {
 test('DELETE /locations/1 -> 404 ROUTE_NOT_FOUND (locations are deactivated, not deleted)', async () => {
     const res = await call('DELETE', '/locations/1');
     assert.strictEqual(res.status, 404);
-    assert.strictEqual((await res.json()).error, 'ROUTE_NOT_FOUND');
+    assert.strictEqual((await res.json()).error.code, 'ROUTE_NOT_FOUND');
 });
 
 test('GET /statuses -> 200 with the service rows', async () => {
     const res = await call('GET', '/statuses');
     assert.strictEqual(res.status, 200);
-    assert.deepStrictEqual(await res.json(), [statusRow]);
+    assert.deepStrictEqual(await res.json(), { data: [statusRow] });
 });
 
 test('POST /statuses trims and upper-cases the code -> 201', async () => {
     const res = await call('POST', '/statuses', { ...statusBody, status_code: ' gr_f2 ' });
     assert.strictEqual(res.status, 201);
-    assert.deepStrictEqual(await res.json(), statusRow);
+    assert.deepStrictEqual(await res.json(), { data: statusRow });
     assert.deepStrictEqual(calls[0].args, [statusBody]);
 });
 
 test('POST /statuses with CLEARED and a location -> 400 VALIDATION_ERROR, service not called', async () => {
     const res = await call('POST', '/statuses', { ...statusBody, status_code: 'CLEARED', location_id: 3 });
     assert.strictEqual(res.status, 400);
-    const body = await res.json();
-    assert.strictEqual(body.error, 'VALIDATION_ERROR');
+    const body = (await res.json()).error;
+    assert.strictEqual(body.code, 'VALIDATION_ERROR');
     assert.deepStrictEqual(body.details, [{ in: 'body', path: 'location_id', message: 'CLEARED must have no location' }]);
     assert.strictEqual(calls.length, 0);
 });
@@ -224,5 +224,7 @@ test('an AppError from the service becomes its status and JSON body', async () =
     nextError = new AppError('MASTER_IN_USE', 409, 'x');
     const res = await call('DELETE', '/processes/7');
     assert.strictEqual(res.status, 409);
-    assert.deepStrictEqual(await res.json(), { error: 'MASTER_IN_USE', message: 'x' });
+    const { error } = await res.json();
+    assert.deepStrictEqual({ code: error.code, message: error.message }, { code: 'MASTER_IN_USE', message: 'x' });
+    assert.ok(error.request_id);
 });

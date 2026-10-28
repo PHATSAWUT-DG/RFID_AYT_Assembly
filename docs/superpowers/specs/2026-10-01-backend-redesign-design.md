@@ -307,7 +307,7 @@ backend/
   db.js                     existing: query(), transaction(), typed()
   shared/
     AppError.js             AppError(code, httpStatus, message, details?)
-    errorHandler.js         AppError → { error, message }; unknown → 500 INTERNAL (logged)
+    errorHandler.js         AppError → { error: { code, message, details?, request_id } }; unknown → 500 INTERNAL (logged)
     validate.js             validate({ params, query, body }) middleware using zod
     sqlErrors.js            isUniqueViolation(err) → 2601 / 2627
   clients/
@@ -394,7 +394,7 @@ Batch, because one reader cycle sees many tags, and 60+ readers are planned (com
    - `lot.status_id == location status` → update `lot.last_seen_at` → outcome `SEEN` (D6).
    - Else → `moveStatus` to the location status, event `SCANNED`, `source = reader`, set `lot.last_seen_at` → outcome `MOVED` (D5, any direction). The service sets `isAbnormal` by the D22 rule; it is a pure function of the status list, the current status and the target status, unit-tested for: next status (normal), forward skip, backward move, move from the last active status.
    - Any error on one tag → outcome `ERROR` with code. Other tags go on.
-4. 200 `{ location_code, results: [{ tag_code, outcome, lot_no?, from_status?, to_status?, abnormal?, error? }] }`. `abnormal` is set only on `MOVED`.
+4. 200 `{ data: { location_code, results: [{ tag_code, outcome, lot_no?, from_status?, to_status?, abnormal?, error? }] }`. `abnormal` is set only on `MOVED`. `}` closes `data`.
 
 ### 7.5 Clear — B4
 
@@ -436,6 +436,8 @@ Job (`jobs/autoClearJob.js`):
 No done API call (D17). `remark` is required (1–255 chars).
 
 ### 7.6 Read views — B5
+
+Paged lists (`GET /lots`, `GET /events`) return `{ data: [...], meta: { page, page_size, total } }`. Other read views return `{ data }`.
 
 | Endpoint | Returns |
 | --- | --- |
@@ -481,9 +483,9 @@ CRUD for `processes`, `locations`, `statuses`. Paths are plural and flat (plan M
 
 | Method | Path | Success |
 | --- | --- | --- |
-| GET | `/processes`, `/locations`, `/statuses` | 200 plain array |
-| POST | `/processes`, `/locations`, `/statuses` | 201 + the new row |
-| PUT | `/processes/:id`, `/locations/:id`, `/statuses/:id` | 200 + the updated row. Full body, not a patch. |
+| GET | `/processes`, `/locations`, `/statuses` | 200 `{ data: [...] }` |
+| POST | `/processes`, `/locations`, `/statuses` | 201 `{ data: row }` (the new row) |
+| PUT | `/processes/:id`, `/locations/:id`, `/statuses/:id` | 200 `{ data: row }` (the updated row). Full body, not a patch. |
 | DELETE | `/processes/:id`, `/statuses/:id` | 204 |
 
 `:id` must be a positive integer, else 400 `VALIDATION_ERROR`. There is no `DELETE /locations/:id`.
@@ -496,7 +498,7 @@ CRUD for `processes`, `locations`, `statuses`. Paths are plural and flat (plan M
 
 ### 7.9 Mock upstream routes — B2 / B4 / B5 (P8)
 
-Mounted only when `ENABLE_MOCK_ROUTES=true`. Same response shapes as the real APIs.
+Mounted only when `ENABLE_MOCK_ROUTES=true`. Same response shapes as the real APIs. They are not wrapped in `{ data }`, because they copy external APIs (section 9).
 
 | Route | Backed by | Real env var it stands in for |
 | --- | --- | --- |
@@ -557,7 +559,13 @@ All three clients go through `httpLogger` → `tb_assy_api_log` (`api_type`: `RE
 
 ## 9. Errors
 
-Body: `{ "error": "<CODE>", "message": "<text>", "details"?: {...} }`. Same `error` key the FE reads today.
+Success body: `{ "data": <row or array> }`, plus `"meta": { page, page_size, total }` on paged lists (`meta` is present only when it has content). `DELETE` returns 204 with no body.
+
+Error body: `{ "error": { "code": "<CODE>", "message": "<text>", "details"?: {...}, "request_id": "<id>" } }`. The code strings below are unchanged. Only the body shape changed: the FE reads `error.code`, not a top-level `error`.
+
+Not wrapped: the mock upstream routes (7.9, they copy external APIs), the SSE stream (7.10), and legacy `routes/assembly.js` handlers until their branch rewrites them. Errors that pass through `errorHandler` use the new shape everywhere, legacy paths included.
+
+Every response carries an `X-Request-Id` header. An inbound `X-Request-Id` is kept if it matches `^[A-Za-z0-9._-]{1,64}$`, else it is replaced by a UUID. The 500 log line includes it.
 
 | Code | HTTP | When |
 | --- | --- | --- |

@@ -25,18 +25,21 @@ docs: |-
   `:id` is not a positive integer.
   ```json
   {
-    "error": "VALIDATION_ERROR",
-    "message": "Request validation failed",
-    "details": [{ "in": "params", "path": "id", "message": "Invalid input: expected number, received NaN" }]
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "Request validation failed",
+      "details": [{ "in": "params", "path": "id", "message": "Invalid input: expected number, received NaN" }],
+      "request_id": "3f6c1b0e-0000-4000-8000-000000000001"
+    }
   }
   ```
 
   ### 404 MASTER_NOT_FOUND
   ```json
-  { "error": "MASTER_NOT_FOUND", "message": "Process 99 not found" }
+  { "error": { "code": "MASTER_NOT_FOUND", "message": "Process 99 not found", "request_id": "3f6c1b0e-0000-4000-8000-000000000001" } }
   ```
 
   ### 409 MASTER_IN_USE
   ```json
-  { "error": "MASTER_IN_USE", "message": "Process is still used by a location" }
+  { "error": { "code": "MASTER_IN_USE", "message": "Process is still used by a location", "request_id": "3f6c1b0e-0000-4000-8000-000000000001" } }
   ```

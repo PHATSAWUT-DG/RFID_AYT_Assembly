@@ -11,19 +11,24 @@ function createErrorHandler({ logger = console } = {}) {
     return (err, req, res, next) => {
         if (res.headersSent) return next(err);
 
+        const send = (status, code, message, details) => {
+            const error = { code, message };
+            if (details !== undefined) error.details = details;
+            error.request_id = req.id;
+            return res.status(status).json({ error });
+        };
+
         if (err instanceof AppError) {
-            const body = { error: err.code, message: err.message };
-            if (err.details !== undefined) body.details = err.details;
-            return res.status(err.httpStatus).json(body);
+            return send(err.httpStatus, err.code, err.message, err.details);
         }
 
         const bodyError = BODY_PARSER_ERRORS[err.type];
         if (bodyError) {
-            return res.status(bodyError.status).json({ error: 'VALIDATION_ERROR', message: bodyError.message });
+            return send(bodyError.status, 'VALIDATION_ERROR', bodyError.message);
         }
 
-        logger.error(`[${req.method} ${req.originalUrl}]`, err);
-        return res.status(500).json({ error: 'INTERNAL', message: 'Internal server error' });
+        logger.error(`[${req.method} ${req.originalUrl} ${req.id}]`, err);
+        return send(500, 'INTERNAL', 'Internal server error');
     };
 }
 

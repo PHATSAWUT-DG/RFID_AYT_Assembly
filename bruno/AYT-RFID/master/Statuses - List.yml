@@ -22,26 +22,28 @@ docs: |-
 
   ### 200 With rows
   ```json
-  [
-    {
-      "id": 1, "status_code": "REGISTERED", "status_label": "Registered", "seq": 1, "location_id": 5,
-      "location_code": "bf_gr_f1", "location_name": "Before Gauging Room F1",
-      "process_id": 1, "process_code": "1400", "is_system": true
-    },
-    {
-      "id": 4, "status_code": "CLEARED", "status_label": "Cleared", "seq": 4, "location_id": null,
-      "location_code": null, "location_name": null,
-      "process_id": null, "process_code": null, "is_system": true
-    }
-  ]
+  {
+    "data": [
+      {
+        "id": 1, "status_code": "REGISTERED", "status_label": "Registered", "seq": 1, "location_id": 5,
+        "location_code": "bf_gr_f1", "location_name": "Before Gauging Room F1",
+        "process_id": 1, "process_code": "1400", "is_system": true
+      },
+      {
+        "id": 4, "status_code": "CLEARED", "status_label": "Cleared", "seq": 4, "location_id": null,
+        "location_code": null, "location_name": null,
+        "process_id": null, "process_code": null, "is_system": true
+      }
+    ]
+  }
   ```
 
   ### 200 Empty
   ```json
-  []
+  { "data": [] }
   ```
 
   ### 500 INTERNAL
   ```json
-  { "error": "INTERNAL", "message": "Internal server error" }
+  { "error": { "code": "INTERNAL", "message": "Internal server error", "request_id": "3f6c1b0e-0000-4000-8000-000000000001" } }
   ```

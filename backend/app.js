@@ -2,9 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const { AppError } = require('./shared/AppError');
 const { createErrorHandler } = require('./shared/errorHandler');
+const { assignRequestId } = require('./shared/requestId');
 
 function createApp({ apiRouter, logger = console }) {
     const app = express();
+    app.use(assignRequestId());
     app.use(cors());
     app.use(express.json());
 

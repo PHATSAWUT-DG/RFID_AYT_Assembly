@@ -29,26 +29,45 @@ Node 22 (CommonJS), Express 5, mssql, zod. Tests use `node:test`.
 
 ## Module layout
 
-`modules/<name>/` has these files. Each one may import only the next one down.
+`modules/<name>/` has one folder per resource, plus `index.js` and optional shared files. `master/` is the reference.
+
+```text
+modules/master/
+  index.js              createMasterModule({ db }) -> router
+  master.errors.js      shared by the resources of this module
+  master.schemas.js
+  processes/            processes.{routes,controller,service,repository,schemas}.js
+  locations/
+  statuses/
+```
+
+Each resource folder has these files. Each one may import only the next one down.
 
 | File | Duty |
 | --- | --- |
-| `routes.js` | `createXxxRoutes({ controller })`: paths, `validate(...)`, no logic. |
-| `controller.js` | `createXxxController({ service })`: reads `req.valid`, sets the HTTP status. No `try/catch`. |
-| `service.js` | `createXxxService({ repo, db })`: business rules, maps SQL errors to `AppError`. |
-| `repository.js` | Plain functions `fn(db, ...args)`: parameterized SQL only. |
-| `schemas.js` | zod schemas for params, query and body. |
-| `index.js` | `createXxxModule({ db })`: wires the five files and returns the router. |
+| `<resource>.routes.js` | `createXxxRoutes({ controller })`: paths, `validate(...)`, no logic. |
+| `<resource>.controller.js` | `createXxxController({ service })`: reads `req.valid`, sets the HTTP status. No `try/catch`. |
+| `<resource>.service.js` | `createXxxService({ repo, db })`: business rules, maps SQL errors to `AppError`. |
+| `<resource>.repository.js` | Plain functions `fn(db, ...args)`: parameterized SQL only. |
+| `<resource>.schemas.js` | zod schemas for params, query and body. |
+
+`index.js` wires the files of every resource and returns the router.
 
 Flow: route -> controller -> service -> repository -> `db.js`.
 
 ## Naming
 
 - Files are camelCase. PascalCase only for a file that exports a class (`AppError.js`).
+- Files under `modules/` are `<resource>.<layer>.js`. Shared module files are `<module>.<topic>.js` (`master.errors.js`).
 - Factories are `createXxx({ deps })`. Dependencies are injected, so tests pass fakes.
 - A test is `<file>.test.js` under `test/unit/`, at the same path as the source.
 
 ## Rules
+
+- A module's `index.js` is its only public file. Only `index.js` (and integration tests) may `require` a `*.repository` or `*.models` file. ESLint enforces this (`no-restricted-syntax` in `eslint.config.js`).
+- Another module gets what it needs through injected services, never through a deep `require`. B2 changes `createMasterModule` to return `{ router, services }` when pairing needs statuses and locations.
+- `toMasterError` (`master.errors.js`) moves to `shared/sqlErrors.js` when a second module needs it.
+- A repository returns plain objects. A delete returns the affected row count, and the service calls `assertAffected`.
 
 - New code imports only `db.js` (`query`, `transaction`, `typed`). Never `getPool`.
 - Input is checked by zod through `validate({ params, query, body })`. Code downstream trusts `req.valid`.

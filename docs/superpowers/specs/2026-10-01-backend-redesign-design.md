@@ -75,7 +75,7 @@ All confirmed with you.
 | D22 | **Abnormal scan** (added 2026-10-26). A `SCANNED` move is abnormal when its target is not the next active status after the lot's current one, ordered by `seq` (`CLEARED` excluded). This covers a forward skip (`REGISTERED` → `MC_F1`) and every backward move (`MC_F1` → `GR_F1`). The lot still moves (D5). The event gets `is_abnormal = 1`. The BE pushes it to the FE over SSE (7.10), and the FE shows a toast. `PAIRED` and `CLEARED` events are never abnormal. A duplicate read (D6) writes no event, so it is never abnormal. |
 | P2 | Table names keep the `tb_assy_` / `tb_master_` prefix. Old tables are already dropped, so the names are free. |
 | P3 | API base stays `/api/assembly` with new resource paths. No `/v2`. |
-| P4 | Feature folders: `modules/<feature>/{routes,controller,service,repository,schemas}.js`. |
+| P4 | Feature folders: `modules/<feature>/<resource>/<resource>.{routes,controller,service,repository,schemas}.js` (one folder per resource). |
 | P5 | Request validation with **zod** at the route boundary. |
 | P6 | Unknown-tag reads go to their own table, with a counter (one row per tag + location). |
 | P7 | Pair always re-fetches the lot from AS400 in the BE. The client sends only `lot_no` + `tag_code` + `emp_id`. |
@@ -317,6 +317,12 @@ backend/
     httpLogger.js           wraps an axios call + writes tb_assy_api_log
   modules/
     master/                 processes, locations, statuses
+      index.js              createMasterModule({ db }) -> router; the only public file
+      master.errors.js      toMasterError, withMasterErrors, orNotFound, assertAffected
+      master.schemas.js     idParams (shared by the three resources)
+      processes/            processes.{routes,controller,service,repository,schemas}.js
+      locations/            locations.*.js (no delete)
+      statuses/             statuses.*.js
     pairing/                pair, clear, tag retire (service owns all state changes)
     scan/                   scan
     query/                  lots, journey, events, dashboard
@@ -325,7 +331,7 @@ backend/
     autoClearJob.js
 ```
 
-Each module: `routes.js`, `controller.js`, `service.js`, `repository.js`, `schemas.js`.
+Each module has an `index.js` and one folder per resource. A resource folder has `<resource>.routes.js`, `.controller.js`, `.service.js`, `.repository.js` and `.schemas.js`. Code shared by the resources of one module sits next to `index.js` as `<module>.<topic>.js`. Deleting a resource means deleting its folder.
 
 | Layer | Does | Does not |
 | --- | --- | --- |

@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { statusBody } = require('../../../../modules/master/schemas');
+const { statusBody } = require('../../../../../modules/master/statuses/statuses.schemas');
 
 const valid = { status_code: 'GR_F2', status_label: 'Gauging F2', seq: 2, location_id: 3 };
 const issuePaths = (result) => result.error.issues.map((i) => i.path.join('.'));

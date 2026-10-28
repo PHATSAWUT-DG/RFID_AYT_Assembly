@@ -22,4 +22,15 @@ module.exports = defineConfig([
             '@stylistic/space-infix-ops': 'error',
         },
     },
+    // Layer rule: only a module's index.js (and integration tests) may load a repository or models file.
+    {
+        files: ['**/*.js'],
+        ignores: ['modules/**/index.js', 'test/integration/**'],
+        rules: {
+            'no-restricted-syntax': ['error', {
+                selector: 'CallExpression[callee.name="require"][arguments.0.value=/\\.(repository|models)$/]',
+                message: 'Only a module index.js (or an integration test) may require a *.repository or *.models file. Use the service instead.',
+            }],
+        },
+    },
 ]);

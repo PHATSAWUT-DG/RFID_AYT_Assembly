@@ -57,7 +57,7 @@ Where: B1.1 in the main session (migration needs our discussion). B1.2a–B1.4a 
 | --- | --- | --- | --- | --- |
 | B2.1 | `httpLogger` + API log repository (rules in spec 8.4) | `clients/httpLogger.js` | Sonnet 5, medium | [ ] |
 | B2.2 | `as400Client.fetchLot` + mock route `/mock/as400/lot/:lot_no` | `clients/as400Client.js`, `modules/mock/*` | Sonnet 5, medium | [ ] |
-| B2.3 | Pairing repository: lot upsert / lock, tag get-or-create, insert pairing, `moveStatus` (the only state writer). Integration tests you run. | `modules/pairing/repository.js` | Opus 5.5, high | [ ] |
+| B2.3 | Pairing repository: lot upsert / lock, tag get-or-create, insert pairing, `moveStatus` (the only state writer). Integration tests you run. | `modules/pairing/<resource>/<resource>.repository.js` (layout: S1 of the B1x plan) | Opus 5.5, high | [ ] |
 | B2.4 | `pairingService.pair` + `POST /pairings` + Bruno. Race → 409 mapping. Delete old `/register-tag`. | `modules/pairing/*` | Opus 5.5, high | [ ] |
 | B2.5 | `GET /lots/lookup/:lot_no`, `PATCH /tags/:tag_code` + Bruno. Delete old `/lot/:lot_no`. | `modules/pairing/*` | Sonnet 5, medium | [ ] |
 
@@ -67,9 +67,9 @@ Where: B2.1–B2.2 new session (Sonnet 5). B2.3–B2.4 main session (Opus, concu
 
 | # | Task | Main files | Model / effort / where | Status |
 | --- | --- | --- | --- | --- |
-| B3.1 | Unknown read upsert (UPDATE → INSERT → retry on 2601/2627) | `modules/scan/repository.js` | Sonnet 5, medium | [ ] |
+| B3.1 | Unknown read upsert (UPDATE → INSERT → retry on 2601/2627) | `modules/scan/<resource>/<resource>.repository.js` | Sonnet 5, medium | [ ] |
 | B3.2 | `scanService` + `POST /scans` (per-tag transaction, MOVED / SEEN / UNKNOWN / ERROR, abnormal flag per spec D22) + Bruno. Delete old `/gauging-room-f1`, `/mc-gauging-f1`, `/change-process`. `service/main_assy.py` stops working here (O4). | `modules/scan/*` | Sonnet 5, high | [ ] |
-| B3.3 | Live events: `shared/eventBus.js`, `GET /events/stream` (SSE, spec 7.10: publish after commit, `Last-Event-ID` backfill, ping, clean-up) + Bruno. `scanService` publishes `scan.abnormal` and one `lots.changed` per batch; `pairingService.pair` publishes `lots.changed`. | `shared/eventBus.js`, `modules/events/*`, `modules/scan/service.js` | Sonnet 5, high | [ ] |
+| B3.3 | Live events: `shared/eventBus.js`, `GET /events/stream` (SSE, spec 7.10: publish after commit, `Last-Event-ID` backfill, ping, clean-up) + Bruno. `scanService` publishes `scan.abnormal` and one `lots.changed` per batch; `pairingService.pair` publishes `lots.changed`. | `shared/eventBus.js`, `modules/events/*`, `modules/scan/<resource>/<resource>.service.js` | Sonnet 5, high | [ ] |
 | B3.4 | Mock reader: `service/mock_reader.py` posts fake scans to `POST /scans` from scenarios (normal move, forward skip, backward move, duplicate read, unknown tag). Replaces `main_assy.py` for dev until the reader service phase. + runbook `docs/runbooks/mock-reader.md` | `service/mock_reader.py` | Sonnet 5, medium | [ ] |
 
 Where: one new session (Sonnet 5, high) for B3.1–B3.3. B3.4 in a new session (Sonnet 5, medium).

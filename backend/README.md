@@ -9,7 +9,7 @@ Node 22 (CommonJS), Express 5, mssql, zod. Tests use `node:test`.
 - `npm run lint` checks style and errors (ESLint 9 flat config). `npm run lint:fix` fixes formatting. `routes/` and `services/` (legacy) are ignored.
 - `npm start` / `npm run dev` start the server (`server.js`). This one uses the real DB.
 - Dev database: `docs/runbooks/dev-database-setup.md`.
-- Env names (see `.env.example`): `PORT`, `DB_SERVER`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `API_TOKEN`, `API_RECEIVE_URL`, `API_PROD_RESULT_URL`.
+- Env names (see `.env.example`): `PORT`, `LOG_DIR`, `DB_SERVER`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `API_TOKEN`, `API_RECEIVE_URL`, `API_PROD_RESULT_URL`.
 
 ## Folder map
 
@@ -19,7 +19,8 @@ Node 22 (CommonJS), Express 5, mssql, zod. Tests use `node:test`.
 | `server.js` | Loads env, wires the modules and the legacy router, listens. |
 | `db.js` | The only DB access: `query`, `transaction`, `typed`, lazy pool. |
 | `modules/<name>/` | New code, one folder per feature. `master/` is the reference. |
-| `shared/` | `AppError`, `errorHandler`, `validate` (zod), `sqlErrors`. |
+| `shared/` | `AppError`, `errorHandler`, `validate` (zod), `sqlErrors`, `logger` (winston: console + daily file in `LOG_DIR`, kept 14 days). |
+| `logs/` | Log files when `LOG_DIR` is not set. Not in git. |
 | `routes/`, `services/` | Legacy. See below. |
 | `scripts/` | Scripts you run yourself (`rehash_passwords.js`, `setup_dev_database.sql`). |
 | `sql/` | SQL: `create_assy_core.sql` (+ `.down.sql`) and older stored procedures. |

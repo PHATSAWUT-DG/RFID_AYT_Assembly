@@ -13,7 +13,7 @@ const assertDevDatabase = () => {
 };
 
 // Runs fn(txDb) inside transaction(...), always rolls back, and returns what fn returned.
-// transaction is db.transaction today (raw SQL), ormTransaction after the Sequelize move.
+// transaction is db.transaction (or any function with the same shape).
 const withRollback = async (transaction, fn) => {
     assertDevDatabase();
     let result;

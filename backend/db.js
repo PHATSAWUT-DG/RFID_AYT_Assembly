@@ -1,5 +1,4 @@
 const sql = require('mssql');
-const { Sequelize } = require('sequelize');
 
 const dbConfig = {
     server: process.env.DB_SERVER || 'PBSY70\\SQLEXPRESS',
@@ -75,41 +74,8 @@ const transaction = async (fn) => {
     }
 };
 
-// Sequelize options from env, same database, login and TLS as dbConfig.
-// DB_SERVER may be host\instance: tedious takes the instance as instanceName and
-// rejects a port next to it, so port is left out then.
-const buildOrmOptions = (env) => {
-    const [host, instanceName] = (env.DB_SERVER || 'PBSY70\\SQLEXPRESS').split('\\');
-    const tediousOptions = { encrypt: true, trustServerCertificate: true };
-    if (instanceName) tediousOptions.instanceName = instanceName;
-    return {
-        dialect: 'mssql',
-        host,
-        ...(instanceName ? {} : { port: Number(env.DB_PORT) || 1433 }),
-        database: env.DB_NAME || 'db_rfid_assembly',
-        username: env.DB_USER,
-        password: env.DB_PASSWORD,
-        logging: false,
-        // The schema lives in sql/*.sql. sync() is never called.
-        define: { freezeTableName: true, timestamps: false },
-        dialectOptions: { options: tediousOptions },
-    };
-};
-
-// Creating the instance does not connect: Sequelize opens a connection on the first query.
-const sequelize = new Sequelize(buildOrmOptions(process.env));
-
-// The ORM context a repository receives as `db`. tx is the open transaction, or undefined.
-const orm = { sequelize, tx: undefined };
-
-// Runs fn inside one transaction. fn receives the same context with tx set, so
-// repositories pass `transaction: db.tx` and services need no transaction awareness.
-// Commits when fn resolves, rolls back and rethrows when it throws.
-const ormTransaction = (fn) => sequelize.transaction((tx) => fn({ sequelize, tx }));
-
 module.exports = {
     query, transaction, typed, inferSqlType, sql,
-    buildOrmOptions, orm, ormTransaction,
     createPoolGetter, // exported for its test only
     // Legacy: only routes/assembly.js and scripts/rehash_passwords.js use this.
     // New code uses query/transaction. Remove when they are gone.

@@ -49,7 +49,7 @@ Each resource folder has these files. Each one may import only the next one down
 | --- | --- |
 | `<resource>.routes.js` | `createXxxRoutes({ controller })`: paths, `validate(...)`, no logic. |
 | `<resource>.controller.js` | `createXxxController({ service })`: reads `req.valid`, sets the HTTP status. No `try/catch`. |
-| `<resource>.service.js` | `createXxxService({ repo, db })`: business rules, maps SQL errors to `AppError`. |
+| `<resource>.service.js` | `createXxxService({ repo, db })`: business rules. Returns `mapMasterErrors(RULES, { ...functions })`, which maps SQL constraint errors to `AppError`. |
 | `<resource>.repository.js` | Plain functions `fn(db, ...args)`: parameterized SQL only. |
 | `<resource>.schemas.js` | zod schemas for params, query and body. |
 
@@ -104,7 +104,7 @@ const router     = createProcessesRoutes({ controller });
   - never pass `txDb` into another module's service.
 - **Writes to one table come from one module only.** If two modules must write the same rows in one transaction, the boundary is wrong: move the write into one module (spec section 6, "One writer for state").
 - **No cycles.** If A needs B and B needs A, move the shared part into its own service or merge the modules. The wiring order in `server.js` shows the graph.
-- **Let the constraint check it.** Do not load another table to check a reference before a write when a foreign key or unique index already enforces it: a check-then-write races. Map the SQL error instead (`withMasterErrors`).
+- **Let the constraint check it.** Do not load another table to check a reference before a write when a foreign key or unique index already enforces it: a check-then-write races. Map the SQL error instead (`mapMasterErrors` / `withMasterErrors`).
 
 ## Legacy
 

@@ -1,5 +1,5 @@
 const { AppError } = require('../../../shared/AppError');
-const { withMasterErrors, orNotFound, assertAffected } = require('../master.errors');
+const { mapMasterErrors, orNotFound, assertAffected } = require('../master.errors');
 
 const STATUS_RULES = {
     uniques: { UQ_master_assy_status_code: 'status_code', UX_master_assy_status_location: 'location_id' },
@@ -21,7 +21,7 @@ const createStatusesService = ({ repo, db }) => {
         return rows.map((row) => ({ ...row, is_system: isSystemStatus(row.status_code) }));
     };
 
-    const createStatus = (input) => withMasterErrors(STATUS_RULES, () => repo.insertStatus(db, input));
+    const createStatus = (input) => repo.insertStatus(db, input);
 
     const loadStatus = async (id) => {
         const row = await repo.selectStatusById(db, id);
@@ -33,7 +33,7 @@ const createStatusesService = ({ repo, db }) => {
         if (isSystemStatus(current.status_code) && input.status_code !== current.status_code) {
             throw new AppError('MASTER_SYSTEM_LOCKED', 409, `System status ${current.status_code} cannot change its code`);
         }
-        const row = await withMasterErrors(STATUS_RULES, () => repo.updateStatus(db, id, input));
+        const row = await repo.updateStatus(db, id, input);
         return orNotFound(row, 'Status', id);
     };
 
@@ -42,11 +42,12 @@ const createStatusesService = ({ repo, db }) => {
         if (isSystemStatus(current.status_code)) {
             throw new AppError('MASTER_SYSTEM_LOCKED', 409, `System status ${current.status_code} cannot be deleted`);
         }
-        const affected = await withMasterErrors(STATUS_RULES, () => repo.deleteStatus(db, id));
+        const affected = await repo.deleteStatus(db, id);
         assertAffected(affected, 'Status', id);
     };
 
-    return { listStatuses, createStatus, updateStatus, deleteStatus };
+    // SQL constraint errors from any of these become AppError (STATUS_RULES).
+    return mapMasterErrors(STATUS_RULES, { listStatuses, createStatus, updateStatus, deleteStatus });
 };
 
 module.exports = { createStatusesService, SYSTEM_STATUS_CODES };

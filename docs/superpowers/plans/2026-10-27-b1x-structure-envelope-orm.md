@@ -4,6 +4,8 @@
 
 **Goal:** Before B2 starts, give the backend a linter, one predictable JSON response shape, a folder-per-resource module layout, and Sequelize v6 repositories, proven on the `master` module.
 
+> **Decision 2026-10-30 (user review of `modules/master`): Sequelize is dropped. Repositories stay raw SQL on `mssql`.** Tasks 1–5 stand. Task 6 was done (`d490ad5`) and reverted; Task 7 is not done. Why: Sequelize 6 cannot read the schema from the database, so every `ALTER TABLE` would need an edit in both `sql/*.sql` and a models file. The master tables are small CRUD that is already pinned by the Task 5 integration tests, and B2's state changes (`UPDLOCK`, filtered unique indexes) are raw SQL anyway. S6, S7 and S8 are dropped; S1 and S10 lose `master.models.js` / `*.models`. The Task 6–7 text below is kept as a record only. Revisit only with a tool that introspects the schema (for example Prisma `db pull`), in a new plan.
+
 **Architecture:** Each resource gets its own folder with one file per layer (`processes/processes.service.js`), like NestJS. Success bodies are `{ data, meta? }` and error bodies are `{ error: { code, message, details?, request_id } }`. Repositories keep their signature `fn(db, ...args)`. Only `db` changes: from the `mssql` shape (`{ query }`) to an ORM context (`{ sequelize, tx }`). So services and their unit tests do not change. Integration tests are written against the current raw-SQL repositories first, and the Sequelize versions must pass the same tests.
 
 **Tech Stack:** Node 22 (CommonJS), Express 5.2, zod 4, mssql 12 (legacy only, after this plan), Sequelize 6 + tedious, ESLint 9 flat config, `node:test`, Bruno YAML.
@@ -28,16 +30,16 @@ Each one is written into the spec in the task that uses it.
 
 | # | Decision | Why | Spec edit in |
 | --- | --- | --- | --- |
-| S1 | Folder per resource: `modules/master/{processes,locations,statuses}/<resource>.{routes,controller,service,repository,schemas}.js`. Code shared inside the module: `modules/master/master.errors.js`, `master.schemas.js`, `master.models.js`. | You delete a feature by deleting one folder. The layout B2 will copy. | Task 4 (6) |
+| S1 | Folder per resource: `modules/master/{processes,locations,statuses}/<resource>.{routes,controller,service,repository,schemas}.js`. Code shared inside the module: `modules/master/master.errors.js`, `master.schemas.js`. (~~`master.models.js`~~ dropped 2026-10-30.) | You delete a feature by deleting one folder. The layout B2 will copy. | Task 4 (6) |
 | S2 | Success: `{ "data": <row or array> }`. Paged list: `{ "data": [...], "meta": { "page", "page_size", "total" } }` (B5 only). `meta` appears only when it has content. `DELETE` → 204, no body. | One shape for the FE to unwrap. Adding paging later does not break the contract. | Task 3 (7.6, 7.8, 9) |
 | S3 | Error: `{ "error": { "code", "message", "details"?, "request_id" } }`. | No `error_` prefix inside `error`. `request_id` links a user's screenshot to the server log. | Task 3 (9) |
 | S4 | Request id: inbound `X-Request-Id` is kept if it matches `^[A-Za-z0-9._-]{1,64}$`, else replaced by `crypto.randomUUID()`. Set on `req.id`, sent back in the `X-Request-Id` response header, written in the 500 log line. | The format check keeps junk out of the logs (and blocks header injection). | Task 2 (9) |
 | S5 | Not wrapped: mock upstream routes (7.9, they copy external APIs), the SSE stream (7.10), and legacy `routes/assembly.js` handlers until their branch rewrites them. Errors that go through `errorHandler` are wrapped everywhere, legacy paths included. | Mocks must keep the real shapes. The legacy FE screens still read the legacy bodies. | Task 3 (7.9, 9) |
-| S6 | `db.js` adds `orm` (`{ sequelize, tx: undefined }`) and `ormTransaction(fn)` (fn gets `{ sequelize, tx }`). Repositories read models from `db.sequelize.models.<Name>` and pass `transaction: db.tx` on every call. Raw T-SQL uses `db.sequelize.query(sql, { replacements, transaction: db.tx })`. | It keeps DI and the `fn(db, ...)` seam, with no CLS (hidden global transaction state). | Task 6 (6) |
-| S7 | One `master.models.js` → `defineMasterModels(sequelize)` defines `MasterProcess`, `MasterLocation`, `MasterStatus` and their associations. Options: `freezeTableName: true`, `timestamps: false`. | The associations cross resources. Three small models do not justify three files. | Task 6 |
-| S8 | `DB_SERVER` may be `host\instance`. `buildOrmOptions(env)` splits it into `host` + `dialectOptions.options.instanceName` and then leaves `port` out (tedious does not accept both). | The `mssql` package parses `host\instance` itself. Sequelize does not. | Task 6 |
+| ~~S6~~ DROPPED | `db.js` adds `orm` (`{ sequelize, tx: undefined }`) and `ormTransaction(fn)` (fn gets `{ sequelize, tx }`). Repositories read models from `db.sequelize.models.<Name>` and pass `transaction: db.tx` on every call. Raw T-SQL uses `db.sequelize.query(sql, { replacements, transaction: db.tx })`. | It keeps DI and the `fn(db, ...)` seam, with no CLS (hidden global transaction state). | Task 6 (6) |
+| ~~S7~~ DROPPED | One `master.models.js` → `defineMasterModels(sequelize)` defines `MasterProcess`, `MasterLocation`, `MasterStatus` and their associations. Options: `freezeTableName: true`, `timestamps: false`. | The associations cross resources. Three small models do not justify three files. | Task 6 |
+| ~~S8~~ DROPPED | `DB_SERVER` may be `host\instance`. `buildOrmOptions(env)` splits it into `host` + `dialectOptions.options.instanceName` and then leaves `port` out (tedious does not accept both). | The `mssql` package parses `host\instance` itself. Sequelize does not. | Task 6 |
 | S9 | ESLint 9 flat config: `@eslint/js` recommended, `globals.node`, and `@stylistic` rules that match the current style (4-space indent, single quotes, semicolons, `always-multiline` trailing commas, `space-infix-ops`). `routes/**` and `services/**` (legacy) are ignored. | It enforces the style without a Prettier rewrite of every file. Legacy code is deleted in B2–B6, so fixing it is wasted work. | Task 1 (README) |
-| S10 | Layer rule via core `no-restricted-syntax` on `require(...)` calls: requiring `/\.(repository|models)$/` is an error outside `modules/**/index.js` and `test/integration/**`. | No extra plugin. It enforces S1's cross-module rule and the layer rule together. | Task 4 (README) |
+| S10 | Layer rule via core `no-restricted-syntax` on `require(...)` calls: requiring `/\.repository$/` (was `/\.(repository|models)$/` until 2026-10-30) is an error outside `modules/**/index.js` and `test/integration/**`. | No extra plugin. It enforces S1's cross-module rule and the layer rule together. | Task 4 (README) |
 
 ## Order and why
 
@@ -64,8 +66,8 @@ Tasks 1–4 have value even if you later drop Sequelize. Tasks 5–7 only matter
 | 3 | Response envelope | [x] `backend/shared/respond.js`, `backend/shared/errorHandler.js`; Bruno run by you pending |
 | 4 | Folder per resource + `assertAffected` + README rules | [x] `backend/modules/master/{processes,locations,statuses}/`, `master.errors.js:39`, S10 in `backend/eslint.config.js:30`; tests 128/128, lint 0 errors |
 | 5 | Integration tests on the raw-SQL master repositories | [x] `backend/test/helpers/withRollback.js`, `backend/test/integration/modules/master/`, `docs/runbooks/integration-tests.md`; unit 131/131, lint 0 errors; `npm run test:integration` run by you pending |
-| 6 | Sequelize setup + processes repository | [x] `backend/db.js` (`buildOrmOptions`, `orm`, `ormTransaction`), `backend/modules/master/master.models.js`, `processes.repository.js` on Sequelize; unit 137/137, lint 0 errors; `npm run test:integration` + 4 Processes Bruno run by you pending |
-| 7 | Locations + statuses repositories on Sequelize | [ ] |
+| 6 | Sequelize setup + processes repository | [-] DROPPED 2026-10-30: done in `d490ad5`, then reverted |
+| 7 | Locations + statuses repositories on Sequelize | [-] DROPPED 2026-10-30, not started |
 
 ## Model, effort, where
 
@@ -207,7 +209,7 @@ These are characterization tests: they record what the current repositories do, 
 - [ ] **Step 4:** `npm test` still passes (the unit glob does not pick up integration tests). `npm run lint` → 0 errors.
 - [ ] **Step 5:** Hand over. **You run** `npm run test:integration` in `backend/`. All tests must pass on the raw-SQL repositories before Task 6. Suggest `test(master): add repository integration tests`.
 
-### Task 6: Sequelize setup + processes repository
+### ~~Task 6: Sequelize setup + processes repository~~ (DROPPED 2026-10-30, record only)
 
 **Files:**
 - Modify: `backend/package.json` (`sequelize@6`, plus `tedious` if Sequelize needs it listed directly)
@@ -235,7 +237,7 @@ These are characterization tests: they record what the current repositories do, 
 - [ ] **Step 6:** Switch the processes integration test to `withRollback(ormTransaction, ...)` and call `defineMasterModels(orm.sequelize)` in `before()`. Do not change any assertion.
 - [ ] **Step 7:** Hand over. **You run** `npm run test:integration` (processes must pass unchanged) and the 4 Processes Bruno requests. Suggest `feat(master): move processes repository to sequelize`.
 
-### Task 7: Locations + statuses repositories on Sequelize
+### ~~Task 7: Locations + statuses repositories on Sequelize~~ (DROPPED 2026-10-30, record only)
 
 **Files:**
 - Modify: `backend/modules/master/{locations,statuses}/<resource>.repository.js`, `backend/modules/master/index.js` (`createMasterModule({ orm })` only), `backend/server.js`

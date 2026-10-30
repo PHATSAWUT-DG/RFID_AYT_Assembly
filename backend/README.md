@@ -1,6 +1,6 @@
 # Backend
 
-Node 22 (CommonJS), Express 5, Sequelize 6 (tedious), mssql (legacy raw SQL), zod. Tests use `node:test`.
+Node 22 (CommonJS), Express 5, mssql, zod. Tests use `node:test`.
 
 ## Run
 
@@ -18,7 +18,7 @@ Node 22 (CommonJS), Express 5, Sequelize 6 (tedious), mssql (legacy raw SQL), zo
 | --- | --- |
 | `app.js` | `createApp({ apiRouter, logger })`: middleware, JSON 404, error handler. Never listens. |
 | `server.js` | Loads env, wires the modules and the legacy router, listens. |
-| `db.js` | The only DB access: `orm` and `ormTransaction` (Sequelize), plus the raw-SQL `query`, `transaction`, `typed`. Nothing connects until the first query. |
+| `db.js` | The only DB access: `query`, `transaction`, `typed`, lazy pool. |
 | `modules/<name>/` | New code, one folder per feature. `master/` is the reference. |
 | `shared/` | `AppError`, `errorHandler`, `validate` (zod), `sqlErrors`, `logger` (winston: console + daily file in `LOG_DIR`, kept 14 days). |
 | `logs/` | Log files when `LOG_DIR` is not set. Not in git. |
@@ -35,8 +35,7 @@ Node 22 (CommonJS), Express 5, Sequelize 6 (tedious), mssql (legacy raw SQL), zo
 
 ```text
 modules/master/
-  index.js              createMasterModule({ db, orm }) -> router
-  master.models.js      defineMasterModels(sequelize): the three models + associations
+  index.js              createMasterModule({ db }) -> router
   master.errors.js      shared by the resources of this module
   master.schemas.js
   processes/            processes.{routes,controller,service,repository,schemas}.js
@@ -51,7 +50,7 @@ Each resource folder has these files. Each one may import only the next one down
 | `<resource>.routes.js` | `createXxxRoutes({ controller })`: paths, `validate(...)`, no logic. |
 | `<resource>.controller.js` | `createXxxController({ service })`: reads `req.valid`, sets the HTTP status. No `try/catch`. |
 | `<resource>.service.js` | `createXxxService({ repo, db })`: business rules, maps SQL errors to `AppError`. |
-| `<resource>.repository.js` | Plain functions `fn(db, ...args)`: Sequelize model calls or parameterized SQL. Returns plain objects. |
+| `<resource>.repository.js` | Plain functions `fn(db, ...args)`: parameterized SQL only. |
 | `<resource>.schemas.js` | zod schemas for params, query and body. |
 
 `index.js` wires the files of every resource and returns the router.
@@ -67,14 +66,12 @@ Flow: route -> controller -> service -> repository -> `db.js`.
 
 ## Rules
 
-- A module's `index.js` is its only public file. Only `index.js` (and integration tests) may `require` a `*.repository` or `*.models` file. ESLint enforces this (`no-restricted-syntax` in `eslint.config.js`).
+- A module's `index.js` is its only public file. Only `index.js` (and integration tests) may `require` a `*.repository` file. ESLint enforces this (`no-restricted-syntax` in `eslint.config.js`).
 - Another module gets what it needs through injected services, never through a deep `require`. B2 changes `createMasterModule` to return `{ router, services }` when pairing needs statuses and locations.
 - `toMasterError` (`master.errors.js`) moves to `shared/sqlErrors.js` when a second module needs it.
 - A repository returns plain objects. A delete returns the affected row count, and the service calls `assertAffected`.
 
-- New repositories use the ORM context `db = { sequelize, tx }` from `db.js` (`orm`, `ormTransaction`). Read models from `db.sequelize.models.<Name>` and pass `transaction: db.tx` on every call. Raw T-SQL goes through `db.sequelize.query(sql, { replacements, transaction: db.tx })`, never string concatenation.
-- `sequelize.sync()` is never called. The schema lives only in `sql/*.sql`, which you run yourself.
-- `query`, `transaction`, `typed` (raw `mssql`) remain only until the last master repository moves to Sequelize. Never `getPool`.
+- New code imports only `db.js` (`query`, `transaction`, `typed`). Never `getPool`.
 - Input is checked by zod through `validate({ params, query, body })`. Code downstream trusts `req.valid`.
 - Errors are `AppError(code, httpStatus, message, details)`. Codes are in spec section 9.
 - Handlers do not catch errors to send a 500. Express 5 passes async errors to `errorHandler`.

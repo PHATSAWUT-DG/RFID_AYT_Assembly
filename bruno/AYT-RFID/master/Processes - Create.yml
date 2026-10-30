@@ -8,7 +8,12 @@ http:
   url: "{{urlPrefix}}/api/assembly/processes"
   body:
     type: json
-    data: "{}"
+    data: |-
+      {
+        "process_code": "9999",
+        "process_name": "Test Process",
+        "can_clear_tag": false
+      }
   auth: inherit
 
 settings:
@@ -21,7 +26,8 @@ settings:
 docs: |-
   Create a process. Returns the new row.
   `process_code` is trimmed, 1-10 chars, and must be unique. `process_name` is trimmed, 1-50 chars.
-  `can_clear_tag` (boolean) says if lots in this process can be cleared on the Clear Tag page. Default false.
+  `can_clear_tag` (boolean) says if lots in this process can be cleared on the Clear Tag page.
+  Every field is required, with no defaults (same body as Update). A missing field is a 400.
 
   ### 201 Created
   ```json

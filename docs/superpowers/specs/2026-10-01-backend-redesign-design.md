@@ -498,6 +498,8 @@ CRUD for `processes`, `locations`, `statuses`. Paths are plural and flat (plan M
 | PUT | `/processes/:id`, `/locations/:id`, `/statuses/:id` | 200 `{ data: row }` (the updated row). Full body, not a patch. |
 | DELETE | `/processes/:id`, `/statuses/:id` | 204 |
 
+POST and PUT of one resource take the same body schema (`processBody`, `locationBody`, `statusBody`): every field is required and none has a default, so a PUT never resets a field the client left out.
+
 `:id` must be a positive integer, else 400 `VALIDATION_ERROR`. There is no `DELETE /locations/:id`.
 
 - Delete a row that is still referenced → 409 `MASTER_IN_USE`.

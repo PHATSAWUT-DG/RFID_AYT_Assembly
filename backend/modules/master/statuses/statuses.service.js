@@ -23,14 +23,18 @@ const createStatusesService = ({ repo, db }) => {
 
     const createStatus = (input) => withMasterErrors(STATUS_RULES, () => repo.insertStatus(db, input));
 
-    const loadStatus = async (id) => orNotFound(await repo.selectStatusById(db, id), 'Status', id);
+    const loadStatus = async (id) => {
+        const row = await repo.selectStatusById(db, id);
+        return orNotFound(row, 'Status', id);
+    };
 
     const updateStatus = async (id, input) => {
         const current = await loadStatus(id);
         if (isSystemStatus(current.status_code) && input.status_code !== current.status_code) {
             throw new AppError('MASTER_SYSTEM_LOCKED', 409, `System status ${current.status_code} cannot change its code`);
         }
-        return orNotFound(await withMasterErrors(STATUS_RULES, () => repo.updateStatus(db, id, input)), 'Status', id);
+        const row = await withMasterErrors(STATUS_RULES, () => repo.updateStatus(db, id, input));
+        return orNotFound(row, 'Status', id);
     };
 
     const deleteStatus = async (id) => {

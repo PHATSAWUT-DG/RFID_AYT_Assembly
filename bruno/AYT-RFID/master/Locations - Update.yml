@@ -26,7 +26,7 @@ settings:
 
 docs: |-
   Update a location by id. Send the full body (same fields as Create). Returns the updated row.
-  `is_active` is required here (Create defaults it to true). A missing field is a 400.
+  Every field is required, with no defaults (same body as Create). PUT replaces the whole row, so a missing field is a 400, never a silent reset.
   There is no delete. To retire a location, send `"is_active": false` (as in this example).
   `:id` must be a positive integer.
 

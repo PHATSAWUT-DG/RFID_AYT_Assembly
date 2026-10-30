@@ -47,11 +47,20 @@ test('GET /processes -> 200 with the service rows', async () => {
     assert.deepStrictEqual(await res.json(), { data: [processRow] });
 });
 
-test('POST /processes trims the code and defaults can_clear_tag to false', async () => {
-    const res = await call('POST', '/processes', { process_code: ' 1600 ', process_name: 'ASSY' });
+test('POST /processes trims the code', async () => {
+    const res = await call('POST', '/processes', { process_code: ' 1600 ', process_name: 'ASSY', can_clear_tag: false });
     assert.strictEqual(res.status, 201);
     assert.deepStrictEqual(await res.json(), { data: processRow });
     assert.deepStrictEqual(calls[0].args, [{ process_code: '1600', process_name: 'ASSY', can_clear_tag: false }]);
+});
+
+test('POST /processes without can_clear_tag -> 400 VALIDATION_ERROR (no default), service not called', async () => {
+    const res = await call('POST', '/processes', { process_code: '1600', process_name: 'ASSY' });
+    assert.strictEqual(res.status, 400);
+    const body = (await res.json()).error;
+    assert.strictEqual(body.code, 'VALIDATION_ERROR');
+    assert.deepStrictEqual(body.details.map((d) => d.path), ['can_clear_tag']);
+    assert.strictEqual(calls.length, 0);
 });
 
 test('POST /processes with an empty body -> 400 VALIDATION_ERROR, service not called', async () => {
@@ -59,7 +68,7 @@ test('POST /processes with an empty body -> 400 VALIDATION_ERROR, service not ca
     assert.strictEqual(res.status, 400);
     const body = (await res.json()).error;
     assert.strictEqual(body.code, 'VALIDATION_ERROR');
-    assert.deepStrictEqual(body.details.map((d) => d.path).sort(), ['process_code', 'process_name']);
+    assert.deepStrictEqual(body.details.map((d) => d.path).sort(), ['can_clear_tag', 'process_code', 'process_name']);
     assert.strictEqual(calls.length, 0);
 });
 

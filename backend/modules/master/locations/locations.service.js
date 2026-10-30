@@ -15,8 +15,10 @@ const createLocationsService = ({ repo, db }) => {
 
     const createLocation = (input) => withMasterErrors(LOCATION_RULES, () => repo.insertLocation(db, input));
 
-    const updateLocation = async (id, input) =>
-        orNotFound(await withMasterErrors(LOCATION_RULES, () => repo.updateLocation(db, id, input)), 'Location', id);
+    const updateLocation = async (id, input) => {
+        const row = await withMasterErrors(LOCATION_RULES, () => repo.updateLocation(db, id, input));
+        return orNotFound(row, 'Location', id);
+    };
 
     return { listLocations, createLocation, updateLocation };
 };

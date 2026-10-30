@@ -40,8 +40,8 @@ test('GET /locations -> 200 with the service rows', async () => {
     assert.deepStrictEqual(await res.json(), { data: [locationRow] });
 });
 
-test('POST /locations trims the code, keeps its case, and defaults is_active to true', async () => {
-    const res = await call('POST', '/locations', { location_code: ' GR_F2 ', location_name: 'Gauging F2', process_id: 1 });
+test('POST /locations trims the code and keeps its case', async () => {
+    const res = await call('POST', '/locations', { location_code: ' GR_F2 ', location_name: 'Gauging F2', process_id: 1, is_active: true });
     assert.strictEqual(res.status, 201);
     assert.deepStrictEqual(await res.json(), { data: locationRow });
     assert.deepStrictEqual(calls[0].args, [{
@@ -49,8 +49,17 @@ test('POST /locations trims the code, keeps its case, and defaults is_active to 
     }]);
 });
 
+test('POST /locations without is_active -> 400 VALIDATION_ERROR (no default), service not called', async () => {
+    const res = await call('POST', '/locations', { location_code: 'GR_F2', location_name: 'Gauging F2', process_id: 1 });
+    assert.strictEqual(res.status, 400);
+    const body = (await res.json()).error;
+    assert.strictEqual(body.code, 'VALIDATION_ERROR');
+    assert.deepStrictEqual(body.details.map((d) => d.path), ['is_active']);
+    assert.strictEqual(calls.length, 0);
+});
+
 test('POST /locations without process_id -> 400 VALIDATION_ERROR, service not called', async () => {
-    const res = await call('POST', '/locations', { location_code: 'GR_F2', location_name: 'Gauging F2' });
+    const res = await call('POST', '/locations', { location_code: 'GR_F2', location_name: 'Gauging F2', is_active: true });
     assert.strictEqual(res.status, 400);
     const body = (await res.json()).error;
     assert.strictEqual(body.code, 'VALIDATION_ERROR');

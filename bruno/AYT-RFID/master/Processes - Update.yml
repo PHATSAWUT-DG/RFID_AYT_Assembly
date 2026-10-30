@@ -25,7 +25,7 @@ settings:
 
 docs: |-
   Update a process by id. Send the full body (same fields as Create). Returns the updated row.
-  `can_clear_tag` is required here (Create defaults it to false). A missing field is a 400.
+  Every field is required, with no defaults (same body as Create). PUT replaces the whole row, so a missing field is a 400, never a silent reset.
   `:id` must be a positive integer.
 
   ### 200 Updated

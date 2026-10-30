@@ -338,11 +338,15 @@ Each module has an `index.js` and one folder per resource. A resource folder has
 | routes | path + `validate(schema)` + controller | logic |
 | controller | read `req`, call service, send status + JSON | SQL, rules, try/catch for 500 |
 | service | rules, transactions, call clients | `req` / `res`, raw SQL |
-| repository | parameterized SQL via `db` / `txDb` | rules |
+| repository | parameterized SQL via `db` / `txDb`; reads may `JOIN` any table | rules; writes to another module's tables |
 
 Rules:
 
-- **Dependency injection**: `createPairingService({ db, repo, as400Client, doneClient })`. Unit tests pass fakes.
+- **Dependency injection**: `createPairingService({ db, lotsRepo, tagsRepo, pairingsRepo, statusesService, as400Client, doneClient })`: one named dependency per repository, plus the services of other modules. Unit tests pass fakes.
+- **Joins**: data from 2+ tables is one SQL `JOIN` in one repository, owned by the main entity of the result. Never two repository calls merged in JS.
+- **One transaction, many repositories**: the service opens `db.transaction(async (txDb) => ...)` and passes the same `txDb` to every repository it calls.
+- **Across modules**: a module uses another module only through the services that module's `index.js` returns (`createMasterModule({ db })` → `{ router, services }` from B2). `server.js` wires the modules in dependency order; no cycles. Another module's service runs outside the caller's transaction, so master data is read before the transaction opens, a read that must be inside it is a `JOIN` in the caller's own repository, and `txDb` is never passed to another module's service. A table is written by one module only.
+- **Constraints over pre-checks**: no read of another table to check a reference before a write that a foreign key or unique index already guards (check-then-write races). The SQL error is mapped to an `AppError` instead.
 - **Express 5**: rejected promises reach the error handler on their own. No `asyncHandler` wrapper.
 - **One writer for state**: only `pairingRepository.moveStatus(txDb, { lotId, pairingId, fromStatusId, toStatus, eventType, locationId, source, empId, remark, isAbnormal = false })` does all three, in the given transaction:
   1. Updates `tb_assy_lot.status_id` + `status_updated_at`.

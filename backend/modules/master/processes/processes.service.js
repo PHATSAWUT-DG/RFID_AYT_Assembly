@@ -15,8 +15,10 @@ const createProcessesService = ({ repo, db }) => {
 
     const createProcess = (input) => withMasterErrors(PROCESS_RULES, () => repo.insertProcess(db, input));
 
-    const updateProcess = async (id, input) =>
-        orNotFound(await withMasterErrors(PROCESS_RULES, () => repo.updateProcess(db, id, input)), 'Process', id);
+    const updateProcess = async (id, input) => {
+        const row = await withMasterErrors(PROCESS_RULES, () => repo.updateProcess(db, id, input));
+        return orNotFound(row, 'Process', id);
+    };
 
     const deleteProcess = async (id) => {
         const affected = await withMasterErrors(PROCESS_RULES, () => repo.deleteProcess(db, id));

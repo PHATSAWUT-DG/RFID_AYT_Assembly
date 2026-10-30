@@ -27,7 +27,8 @@ settings:
 docs: |-
   Create a location. Returns the new row.
   `location_code` is trimmed, 1-20 chars, unique. The case is kept (readers send lower-case codes such as `gr_f1`).
-  `location_name` is trimmed, 1-100 chars. `process_id` must be an existing process. `is_active` defaults to true.
+  `location_name` is trimmed, 1-100 chars. `process_id` must be an existing process. `is_active` is a boolean.
+  Every field is required, with no defaults (same body as Update). A missing field is a 400.
 
   ### 201 Created
   ```json

@@ -1,4 +1,4 @@
-const { withMasterErrors, orNotFound, assertAffected } = require('../master.errors');
+const { mapMasterErrors, orNotFound, assertAffected } = require('../master.errors');
 
 const PROCESS_RULES = {
     uniques: { UQ_master_process_code: 'process_code' },
@@ -13,19 +13,20 @@ const PROCESS_RULES = {
 const createProcessesService = ({ repo, db }) => {
     const listProcesses = () => repo.selectProcesses(db);
 
-    const createProcess = (input) => withMasterErrors(PROCESS_RULES, () => repo.insertProcess(db, input));
+    const createProcess = (input) => repo.insertProcess(db, input);
 
     const updateProcess = async (id, input) => {
-        const row = await withMasterErrors(PROCESS_RULES, () => repo.updateProcess(db, id, input));
+        const row = await repo.updateProcess(db, id, input);
         return orNotFound(row, 'Process', id);
     };
 
     const deleteProcess = async (id) => {
-        const affected = await withMasterErrors(PROCESS_RULES, () => repo.deleteProcess(db, id));
+        const affected = await repo.deleteProcess(db, id);
         assertAffected(affected, 'Process', id);
     };
 
-    return { listProcesses, createProcess, updateProcess, deleteProcess };
+    // SQL constraint errors from any of these become AppError (PROCESS_RULES).
+    return mapMasterErrors(PROCESS_RULES, { listProcesses, createProcess, updateProcess, deleteProcess });
 };
 
 module.exports = { createProcessesService };

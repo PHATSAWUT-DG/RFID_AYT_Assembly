@@ -22,7 +22,7 @@ const toMasterError = (err, { uniques, refs, messages }) => {
     return err;
 };
 
-// Runs a repo call and rethrows SQL constraint errors as AppError.
+// Runs fn and rethrows SQL constraint errors as AppError.
 const withMasterErrors = async (rules, fn) => {
     try {
         return await fn();
@@ -30,6 +30,11 @@ const withMasterErrors = async (rules, fn) => {
         throw toMasterError(err, rules);
     }
 };
+
+// Wraps every function of a service object in withMasterErrors, so the service
+// code itself has no wrapper. AppError and other errors pass through unchanged.
+const mapMasterErrors = (rules, service) => Object.fromEntries(
+    Object.entries(service).map(([name, fn]) => [name, (...args) => withMasterErrors(rules, () => fn(...args))]));
 
 const orNotFound = (found, entity, id) => {
     if (!found) throw new AppError('MASTER_NOT_FOUND', 404, `${entity} ${id} not found`);
@@ -40,4 +45,4 @@ const assertAffected = (count, entity, id) => {
     if (count === 0) throw new AppError('MASTER_NOT_FOUND', 404, `${entity} ${id} not found`);
 };
 
-module.exports = { toMasterError, withMasterErrors, orNotFound, assertAffected };
+module.exports = { toMasterError, withMasterErrors, mapMasterErrors, orNotFound, assertAffected };

@@ -318,7 +318,7 @@ backend/
   modules/
     master/                 processes, locations, statuses
       index.js              createMasterModule({ db }) -> router; the only public file
-      master.errors.js      toMasterError, withMasterErrors, orNotFound, assertAffected
+      master.errors.js      toMasterError, withMasterErrors, mapMasterErrors (wraps a whole service), orNotFound, assertAffected
       master.schemas.js     idParams (shared by the three resources)
       processes/            processes.{routes,controller,service,repository,schemas}.js
       locations/            locations.*.js (no delete)

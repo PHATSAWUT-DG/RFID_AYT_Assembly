@@ -1,4 +1,5 @@
 const express = require('express');
+const { defineMasterModels } = require('./master.models');
 const processesRepo = require('./processes/processes.repository');
 const { createProcessesService } = require('./processes/processes.service');
 const { createProcessesController } = require('./processes/processes.controller');
@@ -12,10 +13,12 @@ const { createStatusesService } = require('./statuses/statuses.service');
 const { createStatusesController } = require('./statuses/statuses.controller');
 const { createStatusesRoutes } = require('./statuses/statuses.routes');
 
-const createMasterModule = ({ db }) => {
+// orm: Sequelize context (processes). db: raw-SQL context (locations, statuses until plan Task 7).
+const createMasterModule = ({ db, orm }) => {
+    defineMasterModels(orm.sequelize);
     const router = express.Router();
     router.use(createProcessesRoutes({
-        controller: createProcessesController({ service: createProcessesService({ repo: processesRepo, db }) }),
+        controller: createProcessesController({ service: createProcessesService({ repo: processesRepo, db: orm }) }),
     }));
     router.use(createLocationsRoutes({
         controller: createLocationsController({ service: createLocationsService({ repo: locationsRepo, db }) }),

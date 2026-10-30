@@ -1,18 +1,20 @@
-// Characterization tests: they pin what the raw-SQL repository does today, so the
-// Sequelize version (plan 2026-10-27, Task 6) must pass them unchanged.
+// Characterization tests: written against the raw-SQL repository (plan 2026-10-27, Task 5).
+// The Sequelize version (Task 6) passes them with no assertion changed.
 // Real DB (DB_NAME must end with _dev). Every write is rolled back.
-const { test } = require('node:test');
+const { test, before } = require('node:test');
 const assert = require('node:assert');
-const db = require('../../../../../db');
+const { orm, ormTransaction } = require('../../../../../db');
+const { defineMasterModels } = require('../../../../../modules/master/master.models');
 const repo = require('../../../../../modules/master/processes/processes.repository');
-const locationsRepo = require('../../../../../modules/master/locations/locations.repository');
 const { getUniqueViolationName, getConstraintConflict } = require('../../../../../shared/sqlErrors');
 const { withRollback } = require('../../../../helpers/withRollback');
 
 const PROCESS_KEYS = ['can_clear_tag', 'id', 'process_code', 'process_name'];
 const UNKNOWN_ID = 999999;
 
-const inTx = (fn) => withRollback(db.transaction, fn);
+before(() => defineMasterModels(orm.sequelize));
+
+const inTx = (fn) => withRollback(ormTransaction, fn);
 const keysOf = (row) => Object.keys(row).sort();
 
 test('selectProcesses returns rows with exactly the process keys, ordered by process_code', async () => {
@@ -88,9 +90,10 @@ test('insertProcess with a duplicate process_code rejects with UQ_master_process
 test('deleteProcess of a process used by a location rejects with a REFERENCE conflict', async () => {
     await inTx(async (txDb) => {
         const process = await repo.insertProcess(txDb, { process_code: 'ZZIT1', process_name: 'IT one', can_clear_tag: false });
-        await locationsRepo.insertLocation(txDb, {
+        // Through the model, not locations.repository: that one is raw SQL until Task 7.
+        await txDb.sequelize.models.MasterLocation.create({
             location_code: 'zz_it_1', location_name: 'IT location', process_id: process.id, is_active: true,
-        });
+        }, { transaction: txDb.tx });
 
         await assert.rejects(repo.deleteProcess(txDb, process.id), (err) => {
             assert.deepStrictEqual(getConstraintConflict(err), { kind: 'REFERENCE', name: 'FK_master_location_process' });

@@ -1,5 +1,5 @@
 const { AppError } = require('../../../shared/AppError');
-const { mapMasterErrors, orNotFound, assertAffected } = require('../master.errors');
+const { mapMasterErrors, orNotFound } = require('../master.errors');
 
 const STATUS_RULES = {
     uniques: { UQ_master_assy_status_code: 'status_code', UX_master_assy_status_location: 'location_id' },
@@ -43,7 +43,7 @@ const createStatusesService = ({ repo, db }) => {
             throw new AppError('MASTER_SYSTEM_LOCKED', 409, `System status ${current.status_code} cannot be deleted`);
         }
         const affected = await repo.deleteStatus(db, id);
-        assertAffected(affected, 'Status', id);
+        orNotFound(affected, 'Status', id);
     };
 
     // SQL constraint errors from any of these become AppError (STATUS_RULES).

@@ -1,4 +1,4 @@
-const { mapMasterErrors, orNotFound, assertAffected } = require('../master.errors');
+const { mapMasterErrors, orNotFound } = require('../master.errors');
 
 const PROCESS_RULES = {
     uniques: { UQ_master_process_code: 'process_code' },
@@ -22,7 +22,7 @@ const createProcessesService = ({ repo, db }) => {
 
     const deleteProcess = async (id) => {
         const affected = await repo.deleteProcess(db, id);
-        assertAffected(affected, 'Process', id);
+        orNotFound(affected, 'Process', id);
     };
 
     // SQL constraint errors from any of these become AppError (PROCESS_RULES).

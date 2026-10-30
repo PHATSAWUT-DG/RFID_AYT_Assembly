@@ -78,6 +78,34 @@ Flow: route -> controller -> service -> repository -> `db.js`.
 - Every endpoint has a Bruno request in the same change.
 - Unit tests never touch a real DB or API.
 
+## Cross-resource rules
+
+Wiring: only `index.js` connects the layers, and only `server.js` connects the modules. Each factory gets what it uses.
+
+```js
+// modules/master/index.js
+const service    = createProcessesService({ repo: processesRepo, db });
+const controller = createProcessesController({ service });
+const router     = createProcessesRoutes({ controller });
+```
+
+- **Data from 2+ tables → one SQL `JOIN` in one repository.** Never two repository calls merged in JS (more queries, and the two reads can see different data). The repository of the main entity in the result owns the query (`selectStatuses` joins location and process).
+- **A repository may read (`JOIN`) any table. It writes only its own module's tables.** Another module's rows change only through that module's service.
+- **One service, 2+ repositories → one named dependency per repository, one shared `txDb`.** The service opens `db.transaction(async (txDb) => ...)` and passes the same `txDb` to every repository, so all writes commit or roll back together.
+
+  ```js
+  const createPairingService = ({ db, lotsRepo, tagsRepo, pairingsRepo, statusesService, as400Client }) => ...
+  ```
+
+- **A service needs another module → inject its service, never require its repository.** `server.js` wires modules in dependency order: `const master = createMasterModule({ db })`, then `createPairingModule({ db, statusesService: master.services.statuses })`.
+- **Another module's service runs outside your transaction** (it uses `db`, not your `txDb`). So:
+  - read master data (a status id by code) **before** you open the transaction, then use the ids inside;
+  - a read that must be inside the transaction (for example with a lock) is a `JOIN` in your own repository;
+  - never pass `txDb` into another module's service.
+- **Writes to one table come from one module only.** If two modules must write the same rows in one transaction, the boundary is wrong: move the write into one module (spec section 6, "One writer for state").
+- **No cycles.** If A needs B and B needs A, move the shared part into its own service or merge the modules. The wiring order in `server.js` shows the graph.
+- **Let the constraint check it.** Do not load another table to check a reference before a write when a foreign key or unique index already enforces it: a check-then-write races. Map the SQL error instead (`withMasterErrors`).
+
 ## Legacy
 
 `routes/assembly.js`, `services/*.js` and the `getPool` export are old code. Do not copy them. Later branches rewrite them (see the roadmap).

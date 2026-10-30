@@ -1,7 +1,7 @@
 # Integration tests
 
 ## Purpose
-Run the repository integration tests against a real dev database. They pin what the master repositories (`processes`, `locations`, `statuses`) return and which SQL errors they raise, so a rewrite (Sequelize, plan `2026-10-27-b1x-structure-envelope-orm.md`, Tasks 6–7) can be checked against them.
+Run the repository integration tests against a real dev database. They pin what the master repositories (`processes`, `locations`, `statuses`) return and which SQL errors they raise, so a change to their SQL can be checked against them. Run it after every change to a master repository.
 Do not use it to check the HTTP layer: use `npm test` (unit) and Bruno for that.
 
 ## Prerequisites

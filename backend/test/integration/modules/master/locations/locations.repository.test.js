@@ -1,10 +1,11 @@
-// Characterization tests: they pin what the raw-SQL repository does today, so the
-// Sequelize version (plan 2026-10-27, Task 7) must pass them unchanged.
+// Characterization tests: they pin what the raw-SQL repository does, so any rewrite of
+// it (new SQL, another driver) must pass them unchanged.
 // Real DB (DB_NAME must end with _dev). Every write is rolled back.
 const { test } = require('node:test');
 const assert = require('node:assert');
 const db = require('../../../../../db');
 const repo = require('../../../../../modules/master/locations/locations.repository');
+const processesRepo = require('../../../../../modules/master/processes/processes.repository');
 const { getUniqueViolationName, getConstraintConflict } = require('../../../../../shared/sqlErrors');
 const { withRollback } = require('../../../../helpers/withRollback');
 
@@ -16,15 +17,8 @@ const UNKNOWN_ID = 999999;
 const inTx = (fn) => withRollback(db.transaction, fn);
 const keysOf = (row) => Object.keys(row).sort();
 
-// Raw SQL on the same transaction: processes.repository is on Sequelize since Task 6,
-// and this file still runs on db.transaction until Task 7.
-const insertFixtureProcess = async (txDb) => {
-    const out = await txDb.query(
-        `INSERT INTO tb_master_process (process_code, process_name, can_clear_tag)
-         OUTPUT INSERTED.id
-         VALUES ('ZZIT1', 'IT process', 0)`);
-    return out.recordset[0];
-};
+const insertFixtureProcess = (txDb) =>
+    processesRepo.insertProcess(txDb, { process_code: 'ZZIT1', process_name: 'IT process', can_clear_tag: false });
 
 const locationInput = (processId, overrides = {}) => ({
     location_code: 'zz_it_1', location_name: 'IT location', process_id: processId, is_active: true, ...overrides,

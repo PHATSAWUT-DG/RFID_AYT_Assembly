@@ -63,7 +63,7 @@ Tasks 1–4 have value even if you later drop Sequelize. Tasks 5–7 only matter
 | 2 | Request id middleware | [x] `backend/shared/requestId.js`, mounted `backend/app.js:8` |
 | 3 | Response envelope | [x] `backend/shared/respond.js`, `backend/shared/errorHandler.js`; Bruno run by you pending |
 | 4 | Folder per resource + `assertAffected` + README rules | [x] `backend/modules/master/{processes,locations,statuses}/`, `master.errors.js:39`, S10 in `backend/eslint.config.js:30`; tests 128/128, lint 0 errors |
-| 5 | Integration tests on the raw-SQL master repositories | [ ] |
+| 5 | Integration tests on the raw-SQL master repositories | [x] `backend/test/helpers/withRollback.js`, `backend/test/integration/modules/master/`, `docs/runbooks/integration-tests.md`; unit 131/131, lint 0 errors; `npm run test:integration` run by you pending |
 | 6 | Sequelize setup + processes repository | [ ] |
 | 7 | Locations + statuses repositories on Sequelize | [ ] |
 

@@ -304,12 +304,12 @@ The old tables were dropped with the rest. B1.1 recreates them (roadmap O1) with
 backend/
   app.js                    express app: middleware, /api/assembly router, error handler. No listen().
   server.js                 listen() + start jobs
-  db.js                     existing: query(), transaction(), typed()
+  db.js                     orm ({ sequelize, tx }), ormTransaction(fn) (Sequelize 6 + tedious); legacy raw SQL: query(), transaction(), typed()
   shared/
     AppError.js             AppError(code, httpStatus, message, details?)
     errorHandler.js         AppError → { error: { code, message, details?, request_id } }; unknown → 500 INTERNAL (logged)
     validate.js             validate({ params, query, body }) middleware using zod
-    sqlErrors.js            isUniqueViolation(err) → 2601 / 2627
+    sqlErrors.js            isUniqueViolation(err) → 2601 / 2627; getConstraintConflict(err) → 547. Reads err.parent (Sequelize) when present
   clients/
     as400Client.js          fetchLot(lotNo) → snapshot | null
     doneClient.js           isLotDone(lotNo) → boolean
@@ -317,7 +317,8 @@ backend/
     httpLogger.js           wraps an axios call + writes tb_assy_api_log
   modules/
     master/                 processes, locations, statuses
-      index.js              createMasterModule({ db }) -> router; the only public file
+      index.js              createMasterModule({ db, orm }) -> router; the only public file
+      master.models.js      defineMasterModels(sequelize): MasterProcess, MasterLocation, MasterStatus + associations
       master.errors.js      toMasterError, withMasterErrors, orNotFound, assertAffected
       master.schemas.js     idParams (shared by the three resources)
       processes/            processes.{routes,controller,service,repository,schemas}.js
@@ -338,12 +339,13 @@ Each module has an `index.js` and one folder per resource. A resource folder has
 | routes | path + `validate(schema)` + controller | logic |
 | controller | read `req`, call service, send status + JSON | SQL, rules, try/catch for 500 |
 | service | rules, transactions, call clients | `req` / `res`, raw SQL |
-| repository | parameterized SQL via `db` / `txDb` | rules |
+| repository | Sequelize models / parameterized SQL via `db` (`{ sequelize, tx }`), returns plain objects | rules, `sync()` |
 
 Rules:
 
 - **Dependency injection**: `createPairingService({ db, repo, as400Client, doneClient })`. Unit tests pass fakes.
 - **Express 5**: rejected promises reach the error handler on their own. No `asyncHandler` wrapper.
+- **ORM context**: a repository gets `db = { sequelize, tx }`. It reads models from `db.sequelize.models.<Name>` and passes `transaction: db.tx` on every call. Raw T-SQL goes through `db.sequelize.query(sql, { replacements, transaction: db.tx })`. A service opens a transaction with `ormTransaction(fn)`; `fn` gets the same context with `tx` set. No CLS. `sequelize.sync()` is never called: the schema lives only in `.sql` migrations.
 - **One writer for state**: only `pairingRepository.moveStatus(txDb, { lotId, pairingId, fromStatusId, toStatus, eventType, locationId, source, empId, remark, isAbnormal = false })` does all three, in the given transaction:
   1. Updates `tb_assy_lot.status_id` + `status_updated_at`.
   2. If `toStatus` is `CLEARED`: sets the pairing's `closed_at` / `closed_by` (D20).

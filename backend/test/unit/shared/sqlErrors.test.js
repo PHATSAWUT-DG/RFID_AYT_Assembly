@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const {
     isUniqueViolation, getUniqueViolationName, getConstraintConflict,
 } = require('../../../shared/sqlErrors');
+const { UniqueConstraintError, ForeignKeyConstraintError, DatabaseError } = require('sequelize');
 
 const sqlError = (number, message) => Object.assign(new Error(message), { number });
 
@@ -52,4 +53,23 @@ test('getConstraintConflict: null when it is not a constraint conflict', () => {
     assert.strictEqual(getConstraintConflict(sqlError(547, 'unexpected text')), null);
     assert.strictEqual(getConstraintConflict(new Error('x')), null);
     assert.strictEqual(getConstraintConflict(undefined), null);
+});
+
+// Sequelize wraps the driver error. The SQL number and message are only on err.parent.
+test('a Sequelize UniqueConstraintError is read from its parent driver error', () => {
+    const wrapped = new UniqueConstraintError({ parent: duplicateConstraint });
+    assert.strictEqual(wrapped.name, 'SequelizeUniqueConstraintError');
+    assert.strictEqual(isUniqueViolation(wrapped), true);
+    assert.strictEqual(getUniqueViolationName(wrapped), 'UQ_assy_tag_code');
+    assert.strictEqual(getUniqueViolationName(new UniqueConstraintError({ parent: duplicateIndex })), 'UX_pairing_active_tag');
+});
+
+test('a Sequelize ForeignKeyConstraintError / DatabaseError (547) is read from its parent driver error', () => {
+    assert.deepStrictEqual(getConstraintConflict(new ForeignKeyConstraintError({ parent: foreignKey })),
+        { kind: 'FOREIGN KEY', name: 'FK_master_location_process' });
+    assert.deepStrictEqual(getConstraintConflict(new ForeignKeyConstraintError({ parent: reference })),
+        { kind: 'REFERENCE', name: 'FK_master_location_process' });
+    // Sequelize has no class for a CHECK conflict, so it is a plain DatabaseError.
+    assert.deepStrictEqual(getConstraintConflict(new DatabaseError(check)),
+        { kind: 'CHECK', name: 'CK_master_assy_status_location_rule' });
 });

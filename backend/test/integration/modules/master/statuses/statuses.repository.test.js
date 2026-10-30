@@ -5,7 +5,6 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const db = require('../../../../../db');
 const repo = require('../../../../../modules/master/statuses/statuses.repository');
-const processesRepo = require('../../../../../modules/master/processes/processes.repository');
 const locationsRepo = require('../../../../../modules/master/locations/locations.repository');
 const { getUniqueViolationName, getConstraintConflict } = require('../../../../../shared/sqlErrors');
 const { withRollback } = require('../../../../helpers/withRollback');
@@ -18,9 +17,19 @@ const UNKNOWN_ID = 999999;
 const inTx = (fn) => withRollback(db.transaction, fn);
 const keysOf = (row) => Object.keys(row).sort();
 
+// Raw SQL on the same transaction: processes.repository is on Sequelize since Task 6,
+// and this file still runs on db.transaction until Task 7.
+const insertFixtureProcess = async (txDb) => {
+    const out = await txDb.query(
+        `INSERT INTO tb_master_process (process_code, process_name, can_clear_tag)
+         OUTPUT INSERTED.id
+         VALUES ('ZZIT1', 'IT process', 0)`);
+    return out.recordset[0];
+};
+
 // A new process with new locations that have no status yet (the seed locations all have one).
 const insertFixtureLocations = async (txDb, count = 1) => {
-    const process = await processesRepo.insertProcess(txDb, { process_code: 'ZZIT1', process_name: 'IT process', can_clear_tag: false });
+    const process = await insertFixtureProcess(txDb);
     const locations = [];
     for (let i = 1; i <= count; i += 1) {
         locations.push(await locationsRepo.insertLocation(txDb, {

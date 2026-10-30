@@ -6,6 +6,7 @@ Node 22 (CommonJS), Express 5, mssql, zod. Tests use `node:test`.
 
 - `npm install`
 - `npm test` runs the unit tests (everything is mocked; no DB, no network).
+- `npm run test:integration` runs the repository tests on the real dev DB (`DB_NAME` must end with `_dev`; every write is rolled back). Runbook: `docs/runbooks/integration-tests.md`.
 - `npm run lint` checks style and errors (ESLint 9 flat config). `npm run lint:fix` fixes formatting. `routes/` and `services/` (legacy) are ignored.
 - `npm start` / `npm run dev` start the server (`server.js`). This one uses the real DB.
 - Dev database: `docs/runbooks/dev-database-setup.md`.
@@ -25,7 +26,8 @@ Node 22 (CommonJS), Express 5, mssql, zod. Tests use `node:test`.
 | `scripts/` | Scripts you run yourself (`rehash_passwords.js`, `setup_dev_database.sql`). |
 | `sql/` | SQL: `create_assy_core.sql` (+ `.down.sql`) and older stored procedures. |
 | `test/unit/` | Unit tests. The path mirrors the source path. |
-| `test/helpers/` | `startApp` (HTTP test server), `fakeDb` (fake `db`). |
+| `test/integration/` | Repository tests on the real dev DB. Same path rule as `test/unit/`. |
+| `test/helpers/` | `startApp` (HTTP test server), `fakeDb` (fake `db`), `withRollback` (runs an integration test in a transaction that is always rolled back). |
 
 ## Module layout
 

@@ -6,7 +6,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test \"test/unit/**/*.test.js\" \"test/helpers/**/*.test.js\"",
-    "test:integration": "node --test \"test/integration/**/*.test.js\"",
+    "test:integration": "node --env-file=.env --test --test-force-exit \"test/integration/**/*.test.js\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

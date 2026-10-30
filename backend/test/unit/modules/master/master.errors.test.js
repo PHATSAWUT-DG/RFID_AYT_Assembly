@@ -1,20 +1,24 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { assertAffected, mapMasterErrors } = require('../../../../modules/master/master.errors');
+const { orNotFound, mapMasterErrors } = require('../../../../modules/master/master.errors');
 const { AppError } = require('../../../../shared/AppError');
 
-test('assertAffected: zero rows -> MASTER_NOT_FOUND 404 naming the entity and id', () => {
-    assert.throws(() => assertAffected(0, 'Process', 9), (err) => {
-        assert.ok(err instanceof AppError);
-        assert.strictEqual(err.code, 'MASTER_NOT_FOUND');
-        assert.strictEqual(err.httpStatus, 404);
-        assert.strictEqual(err.message, 'Process 9 not found');
-        return true;
-    });
+test('orNotFound: null (update), undefined or 0 (delete count) -> MASTER_NOT_FOUND 404 naming the entity and id', () => {
+    for (const result of [null, undefined, 0]) {
+        assert.throws(() => orNotFound(result, 'Process', 9), (err) => {
+            assert.ok(err instanceof AppError);
+            assert.strictEqual(err.code, 'MASTER_NOT_FOUND');
+            assert.strictEqual(err.httpStatus, 404);
+            assert.strictEqual(err.message, 'Process 9 not found');
+            return true;
+        }, `result ${result}`);
+    }
 });
 
-test('assertAffected: one row returns without throwing', () => {
-    assert.doesNotThrow(() => assertAffected(1, 'Process', 9));
+test('orNotFound: a row or a count of 1 is returned unchanged', () => {
+    const row = { id: 9 };
+    assert.strictEqual(orNotFound(row, 'Process', 9), row);
+    assert.strictEqual(orNotFound(1, 'Process', 9), 1);
 });
 
 const rules = {

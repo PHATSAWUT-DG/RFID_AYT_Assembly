@@ -36,13 +36,14 @@ const withMasterErrors = async (rules, fn) => {
 const mapMasterErrors = (rules, service) => Object.fromEntries(
     Object.entries(service).map(([name, fn]) => [name, (...args) => withMasterErrors(rules, () => fn(...args))]));
 
-const orNotFound = (found, entity, id) => {
-    if (!found) throw new AppError('MASTER_NOT_FOUND', 404, `${entity} ${id} not found`);
-    return found;
+// One not-found check for every repository result: an update or a read by id gives
+// the row or null, a delete gives the affected row count. null, undefined and 0 mean
+// "no such row" (404); anything else is returned unchanged.
+const orNotFound = (result, entity, id) => {
+    if (result === null || result === undefined || result === 0) {
+        throw new AppError('MASTER_NOT_FOUND', 404, `${entity} ${id} not found`);
+    }
+    return result;
 };
 
-const assertAffected = (count, entity, id) => {
-    if (count === 0) throw new AppError('MASTER_NOT_FOUND', 404, `${entity} ${id} not found`);
-};
-
-module.exports = { toMasterError, withMasterErrors, mapMasterErrors, orNotFound, assertAffected };
+module.exports = { toMasterError, withMasterErrors, mapMasterErrors, orNotFound };

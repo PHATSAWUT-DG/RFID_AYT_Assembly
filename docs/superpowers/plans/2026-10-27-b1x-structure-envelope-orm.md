@@ -4,7 +4,7 @@
 
 **Goal:** Before B2 starts, give the backend a linter, one predictable JSON response shape, a folder-per-resource module layout, and Sequelize v6 repositories, proven on the `master` module.
 
-> **Decision 2026-10-30 (user review of `modules/master`): Sequelize is dropped. Repositories stay raw SQL on `mssql`.** Tasks 1–5 stand. Task 6 was done (`d92b59e`) and reverted; Task 7 is not done. Why: Sequelize 6 cannot read the schema from the database, so every `ALTER TABLE` would need an edit in both `sql/*.sql` and a models file. The master tables are small CRUD that is already pinned by the Task 5 integration tests, and B2's state changes (`UPDLOCK`, filtered unique indexes) are raw SQL anyway. S6, S7 and S8 are dropped; S1 and S10 lose `master.models.js` / `*.models`. The Task 6–7 text below is kept as a record only. Revisit only with a tool that introspects the schema (for example Prisma `db pull`), in a new plan.
+> **Decision 2026-10-30 (user review of `modules/master`): Sequelize is dropped. Repositories stay raw SQL on `mssql`.** Tasks 1–5 stand. Task 6 was done (commit `feat(master): move processes repository to sequelize`) and reverted; Task 7 is not done. Why: Sequelize 6 cannot read the schema from the database, so every `ALTER TABLE` would need an edit in both `sql/*.sql` and a models file. The master tables are small CRUD that is already pinned by the Task 5 integration tests, and B2's state changes (`UPDLOCK`, filtered unique indexes) are raw SQL anyway. S6, S7 and S8 are dropped; S1 and S10 lose `master.models.js` / `*.models`. The Task 6–7 text below is kept as a record only. Revisit only with a tool that introspects the schema (for example Prisma `db pull`), in a new plan.
 
 **Architecture:** Each resource gets its own folder with one file per layer (`processes/processes.service.js`), like NestJS. Success bodies are `{ data, meta? }` and error bodies are `{ error: { code, message, details?, request_id } }`. Repositories keep their signature `fn(db, ...args)`. Only `db` changes: from the `mssql` shape (`{ query }`) to an ORM context (`{ sequelize, tx }`). So services and their unit tests do not change. Integration tests are written against the current raw-SQL repositories first, and the Sequelize versions must pass the same tests.
 
@@ -67,10 +67,14 @@ Tasks 1–4 have value even if you later drop Sequelize. Tasks 5–7 only matter
 | 4 | Folder per resource + `assertAffected` + README rules | [x] `backend/modules/master/{processes,locations,statuses}/`, `master.errors.js:39`, S10 in `backend/eslint.config.js:30`; tests 128/128, lint 0 errors |
 | 5 | Integration tests on the raw-SQL master repositories | [x] `backend/test/helpers/withRollback.js`, `backend/test/integration/modules/master/`, `docs/runbooks/integration-tests.md`; unit 131/131, lint 0 errors; `npm run test:integration` run by you pending |
 <<<<<<< HEAD
+<<<<<<< HEAD
 | 6 | Sequelize setup + processes repository | [-] DROPPED 2026-10-30: done in `d490ad5`, then reverted |
 =======
 | 6 | Sequelize setup + processes repository | [-] DROPPED 2026-10-30: done in `d92b59e`, then reverted |
 >>>>>>> ae1f5262abe3a573e454c3432c6961922680d26c
+=======
+| 6 | Sequelize setup + processes repository | [-] DROPPED 2026-10-30: done (commit `feat(master): move processes repository to sequelize`), then reverted |
+>>>>>>> b58f7e2c7209aeb84a887f93c08b56f32ac363f7
 | 7 | Locations + statuses repositories on Sequelize | [-] DROPPED 2026-10-30, not started |
 
 ## Model, effort, where

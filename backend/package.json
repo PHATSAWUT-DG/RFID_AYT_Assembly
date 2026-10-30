@@ -22,6 +22,8 @@
     "express": "^5.2.1",
     "morgan": "^1.12.1",
     "mssql": "^12.7.0",
+    "sequelize": "^6.37.8",
+    "tedious": "^20.3.8",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^4.6.7"

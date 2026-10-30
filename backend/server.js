@@ -10,7 +10,7 @@ const assemblyRoutes = require('./routes/assembly');
 
 // Module routers first: they replace the old handlers in routes/assembly.js.
 const apiRouter = express.Router();
-apiRouter.use(createMasterModule({ db }));
+apiRouter.use(createMasterModule({ db, orm: db.orm }));
 apiRouter.use(assemblyRoutes);
 
 // Must scale to 60+ reader nodes later.

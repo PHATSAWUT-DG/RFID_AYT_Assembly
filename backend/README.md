@@ -49,7 +49,7 @@ Each resource folder has these files. Each one may import only the next one down
 | --- | --- |
 | `<resource>.routes.js` | `createXxxRoutes({ controller })`: paths, `validate(...)`, no logic. |
 | `<resource>.controller.js` | `createXxxController({ service })`: reads `req.valid`, sets the HTTP status. No `try/catch`. |
-| `<resource>.service.js` | `createXxxService({ repo, db })`: business rules, maps SQL errors to `AppError`. |
+| `<resource>.service.js` | `createXxxService({ repo, db })`: business rules. Returns `mapMasterErrors(RULES, { ...functions })`, which maps SQL constraint errors to `AppError`. |
 | `<resource>.repository.js` | Plain functions `fn(db, ...args)`: parameterized SQL only. |
 | `<resource>.schemas.js` | zod schemas for params, query and body. |
 
@@ -66,10 +66,10 @@ Flow: route -> controller -> service -> repository -> `db.js`.
 
 ## Rules
 
-- A module's `index.js` is its only public file. Only `index.js` (and integration tests) may `require` a `*.repository` or `*.models` file. ESLint enforces this (`no-restricted-syntax` in `eslint.config.js`).
+- A module's `index.js` is its only public file. Only `index.js` (and integration tests) may `require` a `*.repository` file. ESLint enforces this (`no-restricted-syntax` in `eslint.config.js`).
 - Another module gets what it needs through injected services, never through a deep `require`. B2 changes `createMasterModule` to return `{ router, services }` when pairing needs statuses and locations.
 - `toMasterError` (`master.errors.js`) moves to `shared/sqlErrors.js` when a second module needs it.
-- A repository returns plain objects. A delete returns the affected row count, and the service calls `assertAffected`.
+- A repository returns plain objects. An update or a read by id returns the row or `null`; a delete returns the affected row count. The service passes either to `orNotFound`, which throws `MASTER_NOT_FOUND` 404 on `null` or `0`.
 
 - New code imports only `db.js` (`query`, `transaction`, `typed`). Never `getPool`.
 - Input is checked by zod through `validate({ params, query, body })`. Code downstream trusts `req.valid`.
@@ -77,6 +77,34 @@ Flow: route -> controller -> service -> repository -> `db.js`.
 - Handlers do not catch errors to send a 500. Express 5 passes async errors to `errorHandler`.
 - Every endpoint has a Bruno request in the same change.
 - Unit tests never touch a real DB or API.
+
+## Cross-resource rules
+
+Wiring: only `index.js` connects the layers, and only `server.js` connects the modules. Each factory gets what it uses.
+
+```js
+// modules/master/index.js
+const service    = createProcessesService({ repo: processesRepo, db });
+const controller = createProcessesController({ service });
+const router     = createProcessesRoutes({ controller });
+```
+
+- **Data from 2+ tables → one SQL `JOIN` in one repository.** Never two repository calls merged in JS (more queries, and the two reads can see different data). The repository of the main entity in the result owns the query (`selectStatuses` joins location and process).
+- **A repository may read (`JOIN`) any table. It writes only its own module's tables.** Another module's rows change only through that module's service.
+- **One service, 2+ repositories → one named dependency per repository, one shared `txDb`.** The service opens `db.transaction(async (txDb) => ...)` and passes the same `txDb` to every repository, so all writes commit or roll back together.
+
+  ```js
+  const createPairingService = ({ db, lotsRepo, tagsRepo, pairingsRepo, statusesService, as400Client }) => ...
+  ```
+
+- **A service needs another module → inject its service, never require its repository.** `server.js` wires modules in dependency order: `const master = createMasterModule({ db })`, then `createPairingModule({ db, statusesService: master.services.statuses })`.
+- **Another module's service runs outside your transaction** (it uses `db`, not your `txDb`). So:
+  - read master data (a status id by code) **before** you open the transaction, then use the ids inside;
+  - a read that must be inside the transaction (for example with a lock) is a `JOIN` in your own repository;
+  - never pass `txDb` into another module's service.
+- **Writes to one table come from one module only.** If two modules must write the same rows in one transaction, the boundary is wrong: move the write into one module (spec section 6, "One writer for state").
+- **No cycles.** If A needs B and B needs A, move the shared part into its own service or merge the modules. The wiring order in `server.js` shows the graph.
+- **Let the constraint check it.** Do not load another table to check a reference before a write when a foreign key or unique index already enforces it: a check-then-write races. Map the SQL error instead (`mapMasterErrors` / `withMasterErrors`).
 
 ## Legacy
 

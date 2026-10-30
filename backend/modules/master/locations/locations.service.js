@@ -1,4 +1,4 @@
-const { withMasterErrors, orNotFound } = require('../master.errors');
+const { mapMasterErrors, orNotFound } = require('../master.errors');
 
 const LOCATION_RULES = {
     uniques: { UQ_master_location_code: 'location_code' },
@@ -13,12 +13,15 @@ const LOCATION_RULES = {
 const createLocationsService = ({ repo, db }) => {
     const listLocations = () => repo.selectLocations(db);
 
-    const createLocation = (input) => withMasterErrors(LOCATION_RULES, () => repo.insertLocation(db, input));
+    const createLocation = (input) => repo.insertLocation(db, input);
 
-    const updateLocation = async (id, input) =>
-        orNotFound(await withMasterErrors(LOCATION_RULES, () => repo.updateLocation(db, id, input)), 'Location', id);
+    const updateLocation = async (id, input) => {
+        const row = await repo.updateLocation(db, id, input);
+        return orNotFound(row, 'Location', id);
+    };
 
-    return { listLocations, createLocation, updateLocation };
+    // SQL constraint errors from any of these become AppError (LOCATION_RULES).
+    return mapMasterErrors(LOCATION_RULES, { listLocations, createLocation, updateLocation });
 };
 
 module.exports = { createLocationsService };

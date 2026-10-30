@@ -1,5 +1,5 @@
-// Characterization tests: they pin what the raw-SQL repository does today, so the
-// Sequelize version (plan 2026-10-27, Task 7) must pass them unchanged.
+// Characterization tests: they pin what the raw-SQL repository does, so any rewrite of
+// it (new SQL, another driver) must pass them unchanged.
 // Real DB (DB_NAME must end with _dev). Every write is rolled back.
 const { test } = require('node:test');
 const assert = require('node:assert');

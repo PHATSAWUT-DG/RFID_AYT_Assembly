@@ -115,3 +115,4 @@ const router     = createProcessesRoutes({ controller });
 - Spec: `docs/superpowers/specs/2026-10-01-backend-redesign-design.md`
 - Roadmap: `docs/superpowers/plans/2026-10-01-backend-redesign-roadmap.md`
 - Bruno collection: `bruno/AYT-RFID/`
+- How a DB error becomes an API response: `docs/guides/db-error-handling.md`

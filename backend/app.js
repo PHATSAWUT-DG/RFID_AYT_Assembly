@@ -1,9 +1,9 @@
 const express = require('express');
 const cors = require('cors');
-const { AppError } = require('./shared/AppError');
-const { createErrorHandler } = require('./shared/errorHandler');
-const { assignRequestId } = require('./shared/requestId');
-const { accessLog } = require('./shared/accessLog');
+const { AppError } = require('./utils/AppError');
+const { createErrorHandler } = require('./utils/errorHandler');
+const { assignRequestId } = require('./utils/requestId');
+const { accessLog } = require('./utils/accessLog');
 
 function createApp({ apiRouter, logger = console }) {
     const app = express();

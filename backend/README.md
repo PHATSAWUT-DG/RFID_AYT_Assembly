@@ -20,7 +20,7 @@ Node 22 (CommonJS), Express 5, mssql, zod. Tests use `node:test`.
 | `server.js` | Loads env, wires the modules and the legacy router, listens. |
 | `db.js` | The only DB access: `query`, `transaction`, `typed`, lazy pool. |
 | `modules/<name>/` | New code, one folder per feature. `master/` is the reference. |
-| `shared/` | `AppError`, `errorHandler`, `validate` (zod), `sqlErrors`, `logger` (winston: console + daily file in `LOG_DIR`, kept 14 days). |
+| `utils/` | Code used by 2+ modules, with no business logic: `AppError`, `errorHandler`, `requestId`, `accessLog`, `validate` (zod), `respond` (`sendData`), `sqlErrors`, `logger` (winston: console + daily file in `LOG_DIR`, kept 14 days). `utils/` never requires a file under `modules/`. |
 | `logs/` | Log files when `LOG_DIR` is not set. Not in git. |
 | `routes/`, `services/` | Legacy. See below. |
 | `scripts/` | Scripts you run yourself (`rehash_passwords.js`, `setup_dev_database.sql`). |
@@ -68,7 +68,7 @@ Flow: route -> controller -> service -> repository -> `db.js`.
 
 - A module's `index.js` is its only public file. Only `index.js` (and integration tests) may `require` a `*.repository` file. ESLint enforces this (`no-restricted-syntax` in `eslint.config.js`).
 - Another module gets what it needs through injected services, never through a deep `require`. B2 changes `createMasterModule` to return `{ router, services }` when pairing needs statuses and locations.
-- `toMasterError` (`master.errors.js`) moves to `shared/sqlErrors.js` when a second module needs it.
+- `toMasterError` (`master.errors.js`) moves to `utils/sqlErrors.js` when a second module needs it.
 - A repository returns plain objects. An update or a read by id returns the row or `null`; a delete returns the affected row count. The service passes either to `orNotFound`, which throws `MASTER_NOT_FOUND` 404 on `null` or `0`.
 
 - New code imports only `db.js` (`query`, `transaction`, `typed`). Never `getPool`.

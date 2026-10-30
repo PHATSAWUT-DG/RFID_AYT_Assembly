@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { AppError } = require('../../../shared/AppError');
-const { createErrorHandler } = require('../../../shared/errorHandler');
+const { AppError } = require('../../../utils/AppError');
+const { createErrorHandler } = require('../../../utils/errorHandler');
 
 function fakeRes() {
     return {

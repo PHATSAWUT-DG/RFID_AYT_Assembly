@@ -1,7 +1,7 @@
 const { test, before, after, beforeEach } = require('node:test');
 const assert = require('node:assert');
 const { createApp } = require('../../../../../app');
-const { AppError } = require('../../../../../shared/AppError');
+const { AppError } = require('../../../../../utils/AppError');
 const { createProcessesController } = require('../../../../../modules/master/processes/processes.controller');
 const { createProcessesRoutes } = require('../../../../../modules/master/processes/processes.routes');
 const { startApp } = require('../../../../helpers/startApp');

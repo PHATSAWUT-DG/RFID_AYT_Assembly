@@ -1,5 +1,5 @@
-const { AppError } = require('../../shared/AppError');
-const { getUniqueViolationName, getConstraintConflict } = require('../../shared/sqlErrors');
+const { AppError } = require('../../utils/AppError');
+const { getUniqueViolationName, getConstraintConflict } = require('../../utils/sqlErrors');
 
 const fieldDetails = (path, message) => (path ? [{ in: 'body', path, message }] : undefined);
 

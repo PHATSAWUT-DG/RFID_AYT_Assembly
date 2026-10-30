@@ -6,7 +6,7 @@ const assert = require('node:assert');
 const db = require('../../../../../db');
 const repo = require('../../../../../modules/master/processes/processes.repository');
 const locationsRepo = require('../../../../../modules/master/locations/locations.repository');
-const { getUniqueViolationName, getConstraintConflict } = require('../../../../../shared/sqlErrors');
+const { getUniqueViolationName, getConstraintConflict } = require('../../../../../utils/sqlErrors');
 const { withRollback } = require('../../../../helpers/withRollback');
 
 const PROCESS_KEYS = ['can_clear_tag', 'id', 'process_code', 'process_name'];

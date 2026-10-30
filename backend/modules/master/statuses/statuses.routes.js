@@ -1,5 +1,5 @@
 const express = require('express');
-const { validate } = require('../../../shared/validate');
+const { validate } = require('../../../utils/validate');
 const { idParams } = require('../master.schemas');
 const { statusBody } = require('./statuses.schemas');
 

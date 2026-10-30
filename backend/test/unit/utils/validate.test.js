@@ -1,8 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { z } = require('zod');
-const { validate } = require('../../../shared/validate');
-const { AppError } = require('../../../shared/AppError');
+const { validate } = require('../../../utils/validate');
+const { AppError } = require('../../../utils/AppError');
 
 function run(middleware, req) {
     let nextArg = 'not called';

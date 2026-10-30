@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { assignRequestId } = require('../../../shared/requestId');
+const { assignRequestId } = require('../../../utils/requestId');
 
 function run(inboundId) {
     const req = { get: (name) => (name.toLowerCase() === 'x-request-id' ? inboundId : undefined) };

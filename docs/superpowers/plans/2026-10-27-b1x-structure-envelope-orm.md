@@ -16,7 +16,7 @@
 
 - CommonJS stays. API base stays `/api/assembly`. Error codes stay as in spec section 9; only the body shape changes.
 - `sequelize.sync()` is never called, in any file or test. The schema lives only in `.sql` migrations that the user runs.
-- New files under `modules/` are kebab-case with a dot suffix: `<resource>.<layer>.js` (`status-locations.service.js` for two words). Existing `shared/*.js`, `app.js`, `db.js` and legacy files keep their names.
+- New files under `modules/` are kebab-case with a dot suffix: `<resource>.<layer>.js` (`status-locations.service.js` for two words). Existing `utils/*.js`, `app.js`, `db.js` and legacy files keep their names.
 - Repository functions keep the shape `fn(db, ...args)` and return plain objects (never Sequelize instances).
 - Only `index.js` files (and integration tests) may `require` a `*.repository.js` or `*.models.js` file. Another module uses your module only through the services your `index.js` exports.
 - Timestamps are DB time (`SYSDATETIME()`); the app never writes `created_at`.
@@ -62,8 +62,8 @@ Tasks 1–4 have value even if you later drop Sequelize. Tasks 5–7 only matter
 | # | Task | Status |
 | --- | --- | --- |
 | 1 | ESLint for the backend (was roadmap B1.6-lint) | [x] `backend/eslint.config.js`; lint 0 errors |
-| 2 | Request id middleware | [x] `backend/shared/requestId.js`, mounted `backend/app.js:8` |
-| 3 | Response envelope | [x] `backend/shared/respond.js`, `backend/shared/errorHandler.js`; Bruno run by you pending |
+| 2 | Request id middleware | [x] `backend/utils/requestId.js`, mounted `backend/app.js:8` |
+| 3 | Response envelope | [x] `backend/utils/respond.js`, `backend/utils/errorHandler.js`; Bruno run by you pending |
 | 4 | Folder per resource + `assertAffected` + README rules | [x] `backend/modules/master/{processes,locations,statuses}/`, `master.errors.js:39`, S10 in `backend/eslint.config.js:30`; tests 128/128, lint 0 errors |
 | 5 | Integration tests on the raw-SQL master repositories | [x] `backend/test/helpers/withRollback.js`, `backend/test/integration/modules/master/`, `docs/runbooks/integration-tests.md`; unit 131/131, lint 0 errors; `npm run test:integration` run by you pending |
 | 6 | Sequelize setup + processes repository | [-] DROPPED 2026-10-30: done (commit `feat(master): move processes repository to sequelize`), then reverted |
@@ -94,7 +94,7 @@ Main session, /compact first:       task 7 — copies the pattern from task 6
 **Files:**
 - Create: `backend/eslint.config.js`
 - Modify: `backend/package.json` (devDependencies; scripts `lint`, `lint:fix`)
-- Modify: any file under `modules/`, `shared/`, `scripts/`, `test/`, plus `app.js`, `server.js`, `db.js`, where `lint:fix` changes formatting or a rule reports an error
+- Modify: any file under `modules/`, `utils/`, `scripts/`, `test/`, plus `app.js`, `server.js`, `db.js`, where `lint:fix` changes formatting or a rule reports an error
 - Modify: `backend/README.md` (Run section: `npm run lint`)
 - Modify: `docs/superpowers/plans/2026-10-01-backend-redesign-roadmap.md` (B1.6-lint row → points to this plan, Task 1)
 
@@ -111,10 +111,10 @@ Main session, /compact first:       task 7 — copies the pattern from task 6
 ### Task 2: Request id middleware
 
 **Files:**
-- Create: `backend/shared/requestId.js`
+- Create: `backend/utils/requestId.js`
 - Modify: `backend/app.js` (mount first, before `cors`)
-- Modify: `backend/shared/errorHandler.js` (500 log line includes `req.id`)
-- Test: `backend/test/unit/shared/requestId.test.js`, `backend/test/unit/app.test.js`
+- Modify: `backend/utils/errorHandler.js` (500 log line includes `req.id`)
+- Test: `backend/test/unit/utils/requestId.test.js`, `backend/test/unit/app.test.js`
 
 **Interfaces:**
 - Produces: `assignRequestId()` → Express middleware that sets `req.id: string` and the `X-Request-Id` response header. Task 3 reads `req.id`.
@@ -125,17 +125,17 @@ Main session, /compact first:       task 7 — copies the pattern from task 6
   - `a junk inbound X-Request-Id is replaced`: send `'x'.repeat(70)` and `'a b'` → the header is a uuid, never the input.
   - `the 500 log line carries the request id`: send `X-Request-Id: t-1` to `/async-crash` → `logged[0]` contains `t-1`.
 - [ ] **Step 2:** `npm test` → the 4 new tests FAIL.
-- [ ] **Step 3:** Implement `assignRequestId()` in `shared/requestId.js` using the S4 regex and `crypto.randomUUID()`. Mount it in `app.js`. In `errorHandler.js`, change the log prefix to `[${req.method} ${req.originalUrl} ${req.id}]`.
+- [ ] **Step 3:** Implement `assignRequestId()` in `utils/requestId.js` using the S4 regex and `crypto.randomUUID()`. Mount it in `app.js`. In `errorHandler.js`, change the log prefix to `[${req.method} ${req.originalUrl} ${req.id}]`.
 - [ ] **Step 4:** `npm test` → all pass. `npm run lint` → 0 errors.
 - [ ] **Step 5:** Spec section 9: add one line about S4. Hand over: suggest `feat(backend): add X-Request-Id to every response`.
 
 ### Task 3: Response envelope
 
 **Files:**
-- Create: `backend/shared/respond.js`
-- Modify: `backend/shared/errorHandler.js`
+- Create: `backend/utils/respond.js`
+- Modify: `backend/utils/errorHandler.js`
 - Modify: `backend/modules/master/controller.js`
-- Test: `backend/test/unit/shared/respond.test.js`, `backend/test/unit/shared/errorHandler.test.js`, `backend/test/unit/app.test.js`, `backend/test/unit/modules/master/routes.test.js`
+- Test: `backend/test/unit/utils/respond.test.js`, `backend/test/unit/utils/errorHandler.test.js`, `backend/test/unit/app.test.js`, `backend/test/unit/modules/master/routes.test.js`
 - Modify: the 11 `bruno/AYT-RFID/master/*.yml` files (doc examples), `bruno/AYT-RFID/master/folder.yml` (describe the envelope once)
 - Modify: spec 6 (`errorHandler.js` line), 7.4 (scan response inside `data`), 7.6 (`meta` for `page` / `page_size`), 7.8 (table: `{ data: [...] }`, `{ data: row }`), 7.9 (mocks not wrapped), 9 (body shape, S2, S3, S5)
 - Modify: roadmap row B1.7-fe: add "FE must read `res.data.data` and `error.code`"
@@ -150,7 +150,7 @@ Main session, /compact first:       task 7 — copies the pattern from task 6
   - `app.test.js`: invalid JSON body → `error.code === 'VALIDATION_ERROR'`. Unknown path → `error.code === 'ROUTE_NOT_FOUND'`. Both have `error.request_id`.
   - `routes.test.js`: every success assertion reads `body.data`. Every error assertion reads `body.error.code`. `DELETE` → 204 with an empty body.
 - [ ] **Step 2:** `npm test` → the changed tests FAIL.
-- [ ] **Step 3:** Implement `sendData` in `shared/respond.js`. Change `errorHandler.js` to build the S3 body (all three branches). Change the master controller to call `sendData` (201 for create).
+- [ ] **Step 3:** Implement `sendData` in `utils/respond.js`. Change `errorHandler.js` to build the S3 body (all three branches). Change the master controller to call `sendData` (201 for create).
 - [ ] **Step 4:** `npm test` → all pass. `npm run lint` → 0 errors.
 - [ ] **Step 5:** Bruno and spec, using the `bruno-docs` skill. Update every 2xx and error example in the 11 master files. Add the envelope to `folder.yml` docs. Make the spec edits listed under Files.
 - [ ] **Step 6:** Hand over. You run the 11 master Bruno requests on `npm run dev`. Suggest `feat(backend)!: wrap responses in data / error envelope`.
@@ -182,7 +182,7 @@ This is a refactor only: no behavior change (`refactoring-safely` skill). Test b
 - [ ] **Step 7:** README: new Module layout table (S1 names), Naming rule (Global Constraints), Rules:
   - A module's `index.js` is its only public file.
   - Another module receives services by injection. B2 changes `createMasterModule` to return `{ router, services }` when pairing needs statuses and locations.
-  - `toMasterError` moves to `shared/sqlErrors.js` when a second module needs it.
+  - `toMasterError` moves to `utils/sqlErrors.js` when a second module needs it.
 
   Make the spec 6 and roadmap edits.
 - [ ] **Step 8:** Hand over. Suggest `refactor(master): split into one folder per resource`.
@@ -214,10 +214,10 @@ These are characterization tests: they record what the current repositories do, 
 **Files:**
 - Modify: `backend/package.json` (`sequelize@6`, plus `tedious` if Sequelize needs it listed directly)
 - Modify: `backend/db.js` (add `buildOrmOptions`, `orm`, `ormTransaction`)
-- Modify: `backend/shared/sqlErrors.js` (read the driver error from `err.parent` when present)
+- Modify: `backend/utils/sqlErrors.js` (read the driver error from `err.parent` when present)
 - Create: `backend/modules/master/master.models.js`
 - Modify: `backend/modules/master/processes/processes.repository.js`, `backend/modules/master/index.js`, `backend/server.js`
-- Test: `backend/test/unit/db.test.js`, `backend/test/unit/shared/sqlErrors.test.js`, `backend/test/integration/modules/master/processes/processes.repository.test.js` (switch to `ormTransaction` only)
+- Test: `backend/test/unit/db.test.js`, `backend/test/unit/utils/sqlErrors.test.js`, `backend/test/integration/modules/master/processes/processes.repository.test.js` (switch to `ormTransaction` only)
 - Modify: `backend/README.md` (Rules: new repositories use `orm`, raw T-SQL through `sequelize.query` with `replacements`), spec 6 (`db.js` line, stack)
 
 **Interfaces:**
@@ -257,7 +257,7 @@ These are characterization tests: they record what the current repositories do, 
 
 ## Deferred (agreed, not in this plan)
 
-- [-] DEFERRED — Move `toMasterError` to `shared/sqlErrors.js`. Why: only `master` uses it today. Resume: when B2 needs constraint mapping (rule written in README, Task 4).
+- [-] DEFERRED — Move `toMasterError` to `utils/sqlErrors.js`. Why: only `master` uses it today. Resume: when B2 needs constraint mapping (rule written in README, Task 4).
 - [-] DEFERRED — Paging (`meta`) on list endpoints. Why: master tables are small. Resume: B5 query module (shape fixed in Task 3, S2).
 - [-] DEFERRED — `createMasterModule` returns `{ router, services }`. Why: no second module needs master services yet. Resume: B2.3, when pairing needs statuses and locations.
 - [-] DEFERRED — FE reads the envelope. Why: the FE does not call the new routes yet. Resume: B1.7-fe / B7.

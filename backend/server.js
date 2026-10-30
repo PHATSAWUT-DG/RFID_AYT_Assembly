@@ -4,7 +4,7 @@ const path = require('node:path');
 const express = require('express');
 const { createApp } = require('./app');
 const db = require('./db');
-const { createLogger } = require('./shared/logger');
+const { createLogger } = require('./utils/logger');
 const { createMasterModule } = require('./modules/master');
 const assemblyRoutes = require('./routes/assembly');
 

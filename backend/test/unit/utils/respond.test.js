@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { sendData } = require('../../../shared/respond');
+const { sendData } = require('../../../utils/respond');
 
 function fakeRes() {
     return {

@@ -7,7 +7,7 @@ const db = require('../../../../../db');
 const repo = require('../../../../../modules/master/statuses/statuses.repository');
 const processesRepo = require('../../../../../modules/master/processes/processes.repository');
 const locationsRepo = require('../../../../../modules/master/locations/locations.repository');
-const { getUniqueViolationName, getConstraintConflict } = require('../../../../../shared/sqlErrors');
+const { getUniqueViolationName, getConstraintConflict } = require('../../../../../utils/sqlErrors');
 const { withRollback } = require('../../../../helpers/withRollback');
 
 const STATUS_KEYS = ['id', 'location_id', 'seq', 'status_code', 'status_label'];

@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const {
     isUniqueViolation, getUniqueViolationName, getConstraintConflict,
-} = require('../../../shared/sqlErrors');
+} = require('../../../utils/sqlErrors');
 
 const sqlError = (number, message) => Object.assign(new Error(message), { number });
 

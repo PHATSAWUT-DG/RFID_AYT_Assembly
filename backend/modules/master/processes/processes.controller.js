@@ -1,4 +1,4 @@
-const { sendData } = require('../../../shared/respond');
+const { sendData } = require('../../../utils/respond');
 
 const createProcessesController = ({ service }) => ({
     listProcesses: async (req, res) => {

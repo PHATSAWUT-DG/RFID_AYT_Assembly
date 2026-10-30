@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { orNotFound, mapMasterErrors } = require('../../../../modules/master/master.errors');
-const { AppError } = require('../../../../shared/AppError');
+const { AppError } = require('../../../../utils/AppError');
 
 test('orNotFound: null (update), undefined or 0 (delete count) -> MASTER_NOT_FOUND 404 naming the entity and id', () => {
     for (const result of [null, undefined, 0]) {

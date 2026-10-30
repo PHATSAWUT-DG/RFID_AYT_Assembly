@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { PassThrough } = require('node:stream');
 const winston = require('winston');
-const { createLogger } = require('../../../shared/logger');
+const { createLogger } = require('../../../utils/logger');
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'logger-test-'));
 const loggers = [];

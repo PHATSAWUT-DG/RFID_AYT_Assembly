@@ -1,4 +1,4 @@
-const { sendData } = require('../../../shared/respond');
+const { sendData } = require('../../../utils/respond');
 
 const createLocationsController = ({ service }) => ({
     listLocations: async (req, res) => {

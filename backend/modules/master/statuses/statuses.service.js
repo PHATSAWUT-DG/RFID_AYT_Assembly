@@ -1,4 +1,4 @@
-const { AppError } = require('../../../shared/AppError');
+const { AppError } = require('../../../utils/AppError');
 const { mapMasterErrors, orNotFound } = require('../master.errors');
 
 const STATUS_RULES = {

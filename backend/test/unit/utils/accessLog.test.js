@@ -1,8 +1,8 @@
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const express = require('express');
-const { assignRequestId } = require('../../../shared/requestId');
-const { accessLog } = require('../../../shared/accessLog');
+const { assignRequestId } = require('../../../utils/requestId');
+const { accessLog } = require('../../../utils/accessLog');
 const { startApp } = require('../../helpers/startApp');
 
 const lines = [];

@@ -39,17 +39,17 @@
 | `backend/db.js` | Modify | Use `getPool()` |
 | `backend/routes/assembly.js` | Modify | `poolPromise` → `getPool()` (mechanical; file is deleted bit by bit in B1–B5) |
 | `backend/scripts/rehash_passwords.js` | Modify | `poolPromise` → `getPool()` |
-| `backend/shared/AppError.js` | Create | `AppError(code, httpStatus, message, details?)` |
-| `backend/shared/errorHandler.js` | Create | `createErrorHandler({ logger })` |
-| `backend/shared/validate.js` | Create | `validate({ params, query, body })` zod middleware → `req.valid` |
-| `backend/shared/sqlErrors.js` | Create | `isUniqueViolation(err)`, `getUniqueViolationName(err)` |
+| `backend/utils/AppError.js` | Create | `AppError(code, httpStatus, message, details?)` |
+| `backend/utils/errorHandler.js` | Create | `createErrorHandler({ logger })` |
+| `backend/utils/validate.js` | Create | `validate({ params, query, body })` zod middleware → `req.valid` |
+| `backend/utils/sqlErrors.js` | Create | `isUniqueViolation(err)`, `getUniqueViolationName(err)` |
 | `backend/app.js` | Create | `createApp({ apiRouter, logger })` |
 | `backend/server.js` | Modify | dotenv + `createApp` + `listen`; old polling removed |
 | `backend/test/helpers/startApp.js` | Create | Start an app on a random port for HTTP tests |
 | `backend/test/unit/database.test.js` | Create | Lazy pool tests |
-| `backend/test/unit/shared/errorHandler.test.js` | Create | |
-| `backend/test/unit/shared/validate.test.js` | Create | |
-| `backend/test/unit/shared/sqlErrors.test.js` | Create | |
+| `backend/test/unit/utils/errorHandler.test.js` | Create | |
+| `backend/test/unit/utils/validate.test.js` | Create | |
+| `backend/test/unit/utils/sqlErrors.test.js` | Create | |
 | `backend/test/unit/app.test.js` | Create | App wiring over real HTTP with a fake router |
 
 ## Task status
@@ -57,8 +57,8 @@
 | # | Task | Model / effort | Status |
 | --- | --- | --- | --- |
 | 1 | Lazy DB pool | Sonnet 5, medium | [x] `database.js:15` lazy `getPool`; callers in `db.js`, `routes/assembly.js`, `scripts/rehash_passwords.js`; test `test/unit/database.test.js` (3/3), `npm test` 33/33 |
-| 2 | `AppError` + error handler | Sonnet 5, medium | [x] `shared/AppError.js`, `shared/errorHandler.js`; test `test/unit/shared/errorHandler.test.js` (7/7), `npm test` 40/40 |
-| 3 | `validate` (zod) + `sqlErrors` | Sonnet 5, medium | [x] `shared/validate.js`, `shared/sqlErrors.js`, zod `^4.6.7` in `package.json:20`; tests 8/8, `npm test` 48/48 |
+| 2 | `AppError` + error handler | Sonnet 5, medium | [x] `utils/AppError.js`, `utils/errorHandler.js`; test `test/unit/utils/errorHandler.test.js` (7/7), `npm test` 40/40 |
+| 3 | `validate` (zod) + `sqlErrors` | Sonnet 5, medium | [x] `utils/validate.js`, `utils/sqlErrors.js`, zod `^4.6.7` in `package.json:20`; tests 8/8, `npm test` 48/48 |
 | 4 | `app.js` / `server.js` split + JSON 404 + `startApp` helper | Sonnet 5, medium | [x] `app.js`, `server.js`, `test/helpers/startApp.js`, `test/unit/app.test.js` (6/6), `npm test` 54/54, spec row added. Smoke test 2026-10-27: user ran `node server.js`, starts with no error; `curl` to an unknown route returns `404` `{"error":"ROUTE_NOT_FOUND",...}` |
 
 Where: one new session (Sonnet 5, medium) for all four tasks.
@@ -215,9 +215,9 @@ Light self-check of the diff against `agents/code-reviewer.md`. Show the diff. S
 ### Task 2: `AppError` + error handler
 
 **Files:**
-- Create: `backend/shared/AppError.js`
-- Create: `backend/shared/errorHandler.js`
-- Test: `backend/test/unit/shared/errorHandler.test.js`
+- Create: `backend/utils/AppError.js`
+- Create: `backend/utils/errorHandler.js`
+- Test: `backend/test/unit/utils/errorHandler.test.js`
 
 **Interfaces:**
 - Produces:
@@ -231,13 +231,13 @@ Light self-check of the diff against `agents/code-reviewer.md`. Show the diff. S
 
 - [ ] **Step 1: Write the failing test**
 
-Create `backend/test/unit/shared/errorHandler.test.js`:
+Create `backend/test/unit/utils/errorHandler.test.js`:
 
 ```js
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { AppError } = require('../../../shared/AppError');
-const { createErrorHandler } = require('../../../shared/errorHandler');
+const { AppError } = require('../../../utils/AppError');
+const { createErrorHandler } = require('../../../utils/errorHandler');
 
 function fakeRes() {
     return {
@@ -318,10 +318,10 @@ test('headers already sent: passes the error on to Express', () => {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run (in `backend/`): `node --test test/unit/shared/errorHandler.test.js`
-Expected: FAIL — `Cannot find module '../../../shared/AppError'`.
+Run (in `backend/`): `node --test test/unit/utils/errorHandler.test.js`
+Expected: FAIL — `Cannot find module '../../../utils/AppError'`.
 
-- [ ] **Step 3: Write `backend/shared/AppError.js`**
+- [ ] **Step 3: Write `backend/utils/AppError.js`**
 
 ```js
 class AppError extends Error {
@@ -337,7 +337,7 @@ class AppError extends Error {
 module.exports = { AppError };
 ```
 
-- [ ] **Step 4: Write `backend/shared/errorHandler.js`**
+- [ ] **Step 4: Write `backend/utils/errorHandler.js`**
 
 ```js
 const { AppError } = require('./AppError');
@@ -374,10 +374,10 @@ module.exports = { createErrorHandler };
 
 - [ ] **Step 5: Run the tests**
 
-Run (in `backend/`): `node --test test/unit/shared/errorHandler.test.js`
+Run (in `backend/`): `node --test test/unit/utils/errorHandler.test.js`
 Expected: 7 pass.
 Run (in `backend/`): `npm test`
-Expected: all pass. (`test/unit/**/*.test.js` picks up the new `shared/` folder.)
+Expected: all pass. (`test/unit/**/*.test.js` picks up the new `utils/` folder.)
 
 - [ ] **Step 6: Hand off for review**
 
@@ -390,10 +390,10 @@ Light self-check. Show the diff. Suggested commit:
 
 **Files:**
 - Modify: `backend/package.json`, `backend/package-lock.json` (via `npm install`)
-- Create: `backend/shared/validate.js`
-- Create: `backend/shared/sqlErrors.js`
-- Test: `backend/test/unit/shared/validate.test.js`
-- Test: `backend/test/unit/shared/sqlErrors.test.js`
+- Create: `backend/utils/validate.js`
+- Create: `backend/utils/sqlErrors.js`
+- Test: `backend/test/unit/utils/validate.test.js`
+- Test: `backend/test/unit/utils/sqlErrors.test.js`
 
 **Interfaces:**
 - Consumes: `AppError` from Task 2.
@@ -409,14 +409,14 @@ Expected: `package.json` `dependencies` gains `"zod": "^4.x.x"`. (Installs from 
 
 - [ ] **Step 2: Write the failing tests**
 
-Create `backend/test/unit/shared/validate.test.js`:
+Create `backend/test/unit/utils/validate.test.js`:
 
 ```js
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { z } = require('zod');
-const { validate } = require('../../../shared/validate');
-const { AppError } = require('../../../shared/AppError');
+const { validate } = require('../../../utils/validate');
+const { AppError } = require('../../../utils/AppError');
 
 function run(middleware, req) {
     let nextArg = 'not called';
@@ -469,12 +469,12 @@ test('missing body (Express 5 leaves req.body undefined) is a validation error, 
 });
 ```
 
-Create `backend/test/unit/shared/sqlErrors.test.js`:
+Create `backend/test/unit/utils/sqlErrors.test.js`:
 
 ```js
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { isUniqueViolation, getUniqueViolationName } = require('../../../shared/sqlErrors');
+const { isUniqueViolation, getUniqueViolationName } = require('../../../utils/sqlErrors');
 
 const sqlError = (number, message) => Object.assign(new Error(message), { number });
 
@@ -506,10 +506,10 @@ test('getUniqueViolationName: null when it is not a unique violation', () => {
 
 - [ ] **Step 3: Run the tests to verify they fail**
 
-Run (in `backend/`): `node --test test/unit/shared/validate.test.js test/unit/shared/sqlErrors.test.js`
-Expected: FAIL — `Cannot find module '../../../shared/validate'` and `'../../../shared/sqlErrors'`.
+Run (in `backend/`): `node --test test/unit/utils/validate.test.js test/unit/utils/sqlErrors.test.js`
+Expected: FAIL — `Cannot find module '../../../utils/validate'` and `'../../../utils/sqlErrors'`.
 
-- [ ] **Step 4: Write `backend/shared/validate.js`**
+- [ ] **Step 4: Write `backend/utils/validate.js`**
 
 ```js
 const { AppError } = require('./AppError');
@@ -545,7 +545,7 @@ function validate(schemas) {
 module.exports = { validate };
 ```
 
-- [ ] **Step 5: Write `backend/shared/sqlErrors.js`**
+- [ ] **Step 5: Write `backend/utils/sqlErrors.js`**
 
 ```js
 // SQL Server: 2601 = duplicate key in a unique index, 2627 = unique/PK constraint.
@@ -565,7 +565,7 @@ module.exports = { isUniqueViolation, getUniqueViolationName };
 
 - [ ] **Step 6: Run the tests**
 
-Run (in `backend/`): `node --test test/unit/shared/validate.test.js test/unit/shared/sqlErrors.test.js`
+Run (in `backend/`): `node --test test/unit/utils/validate.test.js test/unit/utils/sqlErrors.test.js`
 Expected: 8 pass.
 Run (in `backend/`): `npm test`
 Expected: all pass.
@@ -625,7 +625,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const express = require('express');
 const { createApp } = require('../../app');
-const { AppError } = require('../../shared/AppError');
+const { AppError } = require('../../utils/AppError');
 const { startApp } = require('../helpers/startApp');
 
 const logged = [];
@@ -698,8 +698,8 @@ Expected: FAIL — `Cannot find module '../../app'`.
 ```js
 const express = require('express');
 const cors = require('cors');
-const { AppError } = require('./shared/AppError');
-const { createErrorHandler } = require('./shared/errorHandler');
+const { AppError } = require('./utils/AppError');
+const { createErrorHandler } = require('./utils/errorHandler');
 
 function createApp({ apiRouter, logger = console }) {
     const app = express();

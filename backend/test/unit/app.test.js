@@ -2,7 +2,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const express = require('express');
 const { createApp } = require('../../app');
-const { AppError } = require('../../shared/AppError');
+const { AppError } = require('../../utils/AppError');
 const { startApp } = require('../helpers/startApp');
 
 const logged = [];

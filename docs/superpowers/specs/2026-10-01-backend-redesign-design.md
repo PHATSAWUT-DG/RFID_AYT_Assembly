@@ -305,7 +305,7 @@ backend/
   app.js                    express app: middleware, /api/assembly router, error handler. No listen().
   server.js                 listen() + start jobs
   db.js                     existing: query(), transaction(), typed()
-  shared/
+  utils/
     AppError.js             AppError(code, httpStatus, message, details?)
     errorHandler.js         AppError → { error: { code, message, details?, request_id } }; unknown → 500 INTERNAL (logged)
     validate.js             validate({ params, query, body }) middleware using zod
@@ -330,6 +330,8 @@ backend/
   jobs/
     autoClearJob.js
 ```
+
+`utils/` holds code used by 2+ modules that has no business logic. It never requires a file under `modules/`; code used by one module stays in that module.
 
 Each module has an `index.js` and one folder per resource. A resource folder has `<resource>.routes.js`, `.controller.js`, `.service.js`, `.repository.js` and `.schemas.js`. Code shared by the resources of one module sits next to `index.js` as `<module>.<topic>.js`. Deleting a resource means deleting its folder.
 
@@ -524,7 +526,7 @@ Plus the mock admin actions the Mock Done page uses (list / add / delete) under 
 
 `GET /events/stream` returns `text/event-stream`. One connection per browser tab. It is the only push channel: it pushes abnormal scans (D22) and tells the FE when lot counts change, so the dashboard is real-time.
 
-**Rule for every publisher:** publish to the in-process bus (`shared/eventBus.js`, a Node `EventEmitter`) only **after** the transaction commits. A rolled-back change never reaches the FE.
+**Rule for every publisher:** publish to the in-process bus (`utils/eventBus.js`, a Node `EventEmitter`) only **after** the transaction commits. A rolled-back change never reaches the FE.
 
 Two message types:
 
@@ -610,7 +612,7 @@ Every response carries an `X-Request-Id` header. An inbound `X-Request-Id` is ke
 | --- | --- | --- |
 | services | Unit tests, fake repos + fake clients (`node --test`, existing `test/unit`) | Me |
 | clients | Unit tests, axios stubbed: mapping, not-found, error, cache TTL | Me |
-| shared (errorHandler, validate) | Unit tests | Me |
+| utils (errorHandler, validate) | Unit tests | Me |
 | autoClearJob | Unit test with fake service + fake timer: overlap guard, skip rules, summary | Me |
 | repositories | Integration tests against dev DB (`npm run test:integration`) | You |
 | endpoints | Bruno requests | You |

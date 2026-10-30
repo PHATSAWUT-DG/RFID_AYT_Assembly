@@ -27,8 +27,8 @@
 | # | Task | Main files | Model / effort / where | Status |
 | --- | --- | --- | --- | --- |
 | B0.1 | Lazy DB pool: no connection at `require` time, retry after a failed connect | `database.js`, `db.js`, `routes/assembly.js`, `scripts/rehash_passwords.js` | Sonnet 5, medium | [x] `database.js:15` `getPool`/`createPoolGetter`; callers switched; 3 new + 33 total unit tests pass |
-| B0.2 | `AppError` + central error handler | `shared/AppError.js`, `shared/errorHandler.js` | Sonnet 5, medium | [x] `shared/errorHandler.js:11`; 7 new + 40 total unit tests pass |
-| B0.3 | `validate()` (zod) + `sqlErrors` | `shared/validate.js`, `shared/sqlErrors.js`, `package.json` | Sonnet 5, medium | [x] `shared/validate.js:8`, `shared/sqlErrors.js:6`; 8 new + 48 total unit tests pass |
+| B0.2 | `AppError` + central error handler | `utils/AppError.js`, `utils/errorHandler.js` | Sonnet 5, medium | [x] `utils/errorHandler.js:11`; 7 new + 40 total unit tests pass |
+| B0.3 | `validate()` (zod) + `sqlErrors` | `utils/validate.js`, `utils/sqlErrors.js`, `package.json` | Sonnet 5, medium | [x] `utils/validate.js:8`, `utils/sqlErrors.js:6`; 8 new + 48 total unit tests pass |
 | B0.4 | `app.js` / `server.js` split, old polling removed, JSON 404, HTTP test helper | `app.js`, `server.js`, `test/helpers/startApp.js` | Sonnet 5, medium | [x] `app.js:6`, `server.js`; 6 new + 54 total unit tests pass; user smoke test of `node server.js` OK (2026-10-27) |
 
 Where: one **new session (Sonnet 5, medium)** for B0.1–B0.4. Handoff: "Execute `docs/superpowers/plans/2026-10-01-b0-foundation.md` with `superpowers:executing-plans`, inline, one task at a time, wait for my review after each."
@@ -38,7 +38,7 @@ Where: one **new session (Sonnet 5, medium)** for B0.1–B0.4. Handoff: "Execute
 | # | Task | Main files | Model / effort / where | Status |
 | --- | --- | --- | --- | --- |
 | B1.1 | Up / down SQL for all new tables + seed (spec 5.2, 5.3). You review and run it. | `sql/create_assy_core.sql`, `.down.sql`, `scripts/setup_dev_database.sql` | Opus 5.5, high — main session | [x] schema run by the user, tests passed |
-| B1.2a | `getConstraintConflict` + master repository / service for processes | `shared/sqlErrors.js`, `modules/master/{repository,service}.js` | Sonnet 5, medium | [x] `shared/sqlErrors.js:13`, `modules/master/{repository,service}.js` |
+| B1.2a | `getConstraintConflict` + master repository / service for processes | `utils/sqlErrors.js`, `modules/master/{repository,service}.js` | Sonnet 5, medium | [x] `utils/sqlErrors.js:13`, `modules/master/{repository,service}.js` |
 | B1.2b | Processes HTTP + wiring + Bruno. Delete old `/process` handlers. | `modules/master/*`, `server.js` | Sonnet 5, medium | [x] code, tests (73/73), Bruno, spec 7.8 / 9 done. User Bruno run pending. FE still calls `/process` (`ClearTag.tsx:85`) |
 | B1.3 | `locations` CRUD (`is_active` instead of delete) + Bruno | `modules/master/*` | Sonnet 5, medium | [x] `modules/master/*`, Bruno `Locations - *.yml`; tests 86/86. User Bruno run pending |
 | B1.4a | `statuses` CRUD: system statuses, CLEARED ⇔ no location rule, one status per location + Bruno. Delete old `/status` handlers. | `modules/master/*` | Sonnet 5, high | [x] `modules/master/*`, Bruno `Statuses - *.yml`, old `/status` deleted; tests 117/117. User Bruno run pending |
@@ -69,7 +69,7 @@ Where: B2.1–B2.2 new session (Sonnet 5). B2.3–B2.4 main session (Opus, concu
 | --- | --- | --- | --- | --- |
 | B3.1 | Unknown read upsert (UPDATE → INSERT → retry on 2601/2627) | `modules/scan/<resource>/<resource>.repository.js` | Sonnet 5, medium | [ ] |
 | B3.2 | `scanService` + `POST /scans` (per-tag transaction, MOVED / SEEN / UNKNOWN / ERROR, abnormal flag per spec D22) + Bruno. Delete old `/gauging-room-f1`, `/mc-gauging-f1`, `/change-process`. `service/main_assy.py` stops working here (O4). | `modules/scan/*` | Sonnet 5, high | [ ] |
-| B3.3 | Live events: `shared/eventBus.js`, `GET /events/stream` (SSE, spec 7.10: publish after commit, `Last-Event-ID` backfill, ping, clean-up) + Bruno. `scanService` publishes `scan.abnormal` and one `lots.changed` per batch; `pairingService.pair` publishes `lots.changed`. | `shared/eventBus.js`, `modules/events/*`, `modules/scan/<resource>/<resource>.service.js` | Sonnet 5, high | [ ] |
+| B3.3 | Live events: `utils/eventBus.js`, `GET /events/stream` (SSE, spec 7.10: publish after commit, `Last-Event-ID` backfill, ping, clean-up) + Bruno. `scanService` publishes `scan.abnormal` and one `lots.changed` per batch; `pairingService.pair` publishes `lots.changed`. | `utils/eventBus.js`, `modules/events/*`, `modules/scan/<resource>/<resource>.service.js` | Sonnet 5, high | [ ] |
 | B3.4 | Mock reader: `service/mock_reader.py` posts fake scans to `POST /scans` from scenarios (normal move, forward skip, backward move, duplicate read, unknown tag). Replaces `main_assy.py` for dev until the reader service phase. + runbook `docs/runbooks/mock-reader.md` | `service/mock_reader.py` | Sonnet 5, medium | [ ] |
 
 Where: one new session (Sonnet 5, high) for B3.1–B3.3. B3.4 in a new session (Sonnet 5, medium).

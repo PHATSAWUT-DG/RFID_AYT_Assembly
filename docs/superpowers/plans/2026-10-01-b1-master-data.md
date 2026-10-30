@@ -8,7 +8,7 @@
 
 **Tech Stack:** SQL Server (T-SQL), Node 22 (CommonJS), Express 5.2, mssql 12, zod 4, `node:test` + `node:assert`, Bruno YAML.
 
-**Spec:** `docs/superpowers/specs/2026-10-01-backend-redesign-design.md` (sections 5.2, 5.3, 6, 7.8, 9). Roadmap: `docs/superpowers/plans/2026-10-01-backend-redesign-roadmap.md`. Uses B0 code: `shared/AppError.js`, `shared/validate.js`, `shared/sqlErrors.js`, `app.js`, `test/helpers/startApp.js`, `test/helpers/fakeDb.js`.
+**Spec:** `docs/superpowers/specs/2026-10-01-backend-redesign-design.md` (sections 5.2, 5.3, 6, 7.8, 9). Roadmap: `docs/superpowers/plans/2026-10-01-backend-redesign-roadmap.md`. Uses B0 code: `utils/AppError.js`, `utils/validate.js`, `utils/sqlErrors.js`, `app.js`, `test/helpers/startApp.js`, `test/helpers/fakeDb.js`.
 
 ## Global Constraints
 
@@ -58,7 +58,7 @@ The spec leaves these open. Each one is written back into the spec in the task t
 | `backend/scripts/setup_dev_database.sql` | Rewrite | Create the empty dev DB only (M2) | B1.1 |
 | `backend/sql/dbo.{tb_master_process,tb_master_assy_status,tb_assy_lot,tb_assy_tag,tb_assy_login,tb_assy_api_log,tb_assy_mock_as400,tb_assy_mock_done}.Table.sql` | Delete | Old definitions of tables the up script now owns | B1.1 |
 | `docs/runbooks/dev-database-setup.md` | Create | Create DB, run up, verify, first user, roll back | B1.1 |
-| `backend/shared/sqlErrors.js` | Modify | Add `getConstraintConflict(err)` | B1.2a |
+| `backend/utils/sqlErrors.js` | Modify | Add `getConstraintConflict(err)` | B1.2a |
 | `backend/modules/master/repository.js` | Create | Parameterized SQL for the three tables | B1.2a, B1.3, B1.4a |
 | `backend/modules/master/service.js` | Create | `createMasterService({ repo, db })`: rules + error mapping | B1.2a, B1.3, B1.4a |
 | `backend/modules/master/schemas.js` | Create | zod schemas | B1.2b, B1.3, B1.4a |
@@ -69,7 +69,7 @@ The spec leaves these open. Each one is written back into the spec in the task t
 | `backend/routes/assembly.js` | Modify | Delete `/process` (B1.2b) and `/status` (B1.4a) handlers + imports | B1.2b, B1.4a |
 | `backend/services/masterService.js`, `backend/test/unit/masterService.test.js` | Delete | Replaced by the module | B1.4b |
 | `backend/sql/dbo.Stored_tb_master_*.StoredProcedure.sql` (8 files) | Delete | Old master SPs | B1.4b |
-| `backend/test/unit/shared/sqlErrors.test.js` | Modify | Tests for `getConstraintConflict` | B1.2a |
+| `backend/test/unit/utils/sqlErrors.test.js` | Modify | Tests for `getConstraintConflict` | B1.2a |
 | `backend/test/unit/modules/master/service.test.js` | Create | Service rules with a fake repo | B1.2a, B1.3, B1.4a |
 | `backend/test/unit/modules/master/routes.test.js` | Create | HTTP: validation, status codes, controller → service | B1.2b, B1.3, B1.4a |
 | `backend/test/unit/modules/master/schemas.test.js` | Create | Status rule + code normalization | B1.4a |
@@ -88,7 +88,7 @@ The spec leaves these open. Each one is written back into the spec in the task t
 | # | Task | Model / effort / where | Status |
 | --- | --- | --- | --- |
 | B1.1 | Up / down SQL + dev DB script + runbook | Opus 5.5, high — main session | [x] `create_assy_core.sql`, `.down.sql`, `setup_dev_database.sql`, runbook, spec 5.2 / 5.3, roadmap O1; 8 old `.Table.sql` deleted. Run by the user, tests passed. Ruling: the guard is its own batch and checks all 12 tables, not only `tb_assy_lot` (`SET NOEXEC ON` only skips the batches after it) |
-| B1.2a | `getConstraintConflict` + master repository / service: processes | Sonnet 5, medium | [x] `shared/sqlErrors.js:13`, `modules/master/{repository,service}.js`; tests 65/65 |
+| B1.2a | `getConstraintConflict` + master repository / service: processes | Sonnet 5, medium | [x] `utils/sqlErrors.js:13`, `modules/master/{repository,service}.js`; tests 65/65 |
 | B1.2b | Processes HTTP: schemas, controller, routes, wiring, Bruno, delete old `/process` | Sonnet 5, medium | [x] `modules/master/{schemas,controller,routes,index}.js`, `server.js`, `routes/assembly.js`; tests 73/73. User Bruno run pending |
 | B1.3 | Locations: repository, service, HTTP, Bruno | Sonnet 5, medium | [x] `modules/master/*`, `bruno/AYT-RFID/master/Locations - *.yml`; tests 86/86. User Bruno run pending |
 | B1.4a | Statuses: rules, HTTP, Bruno, delete old `/status` | Sonnet 5, high | [x] code, tests (117/117), Bruno, spec 7.8 / 5.2 done. User Bruno run pending |
@@ -233,12 +233,12 @@ Show the up and down SQL in full in chat. You run, in this order: Step 5 runbook
 ### Task B1.2a: `getConstraintConflict` + master repository / service for processes
 
 **Files:**
-- Modify: `backend/shared/sqlErrors.js`
+- Modify: `backend/utils/sqlErrors.js`
 - Create: `backend/modules/master/repository.js`, `backend/modules/master/service.js`
-- Test: `backend/test/unit/shared/sqlErrors.test.js`, `backend/test/unit/modules/master/service.test.js`
+- Test: `backend/test/unit/utils/sqlErrors.test.js`, `backend/test/unit/modules/master/service.test.js`
 
 **Interfaces:**
-- Consumes: `isUniqueViolation(err)`, `getUniqueViolationName(err)` (`shared/sqlErrors.js:5`), `AppError` (`shared/AppError.js:1`), constraint names from B1.1.
+- Consumes: `isUniqueViolation(err)`, `getUniqueViolationName(err)` (`utils/sqlErrors.js:5`), `AppError` (`utils/AppError.js:1`), constraint names from B1.1.
 - Produces:
   - `getConstraintConflict(err): { kind: 'FOREIGN KEY' | 'REFERENCE' | 'CHECK', name: string } | null` — `err.number === 547` and the message matches `conflicted with the (FOREIGN KEY|REFERENCE|CHECK) constraint "<name>"`.
   - Repository (every function takes `db` first; returns plain rows):
@@ -248,7 +248,7 @@ Show the up and down SQL in full in chat. You run, in this order: Step 5 runbook
     - `deleteProcess(db, id) → Promise<number>` (rows affected)
     - `Process = { id, process_code, process_name, can_clear_tag }`
   - Service: `createMasterService({ repo, db })` returns `{ listProcesses(), createProcess(input), updateProcess(id, input), deleteProcess(id) }`.
-  - `toMasterError(err, uniqueFields)` inside `service.js` (not exported): unique violation → `AppError('MASTER_DUPLICATE', 409, ..., [{ in: 'body', path: uniqueFields[name], message }])`; `FOREIGN KEY` → `MASTER_INVALID_REF` 422; `REFERENCE` → `MASTER_IN_USE` 409; anything else → rethrown unchanged. `details` uses the same item shape as `validate()` (`shared/validate.js:19`).
+  - `toMasterError(err, uniqueFields)` inside `service.js` (not exported): unique violation → `AppError('MASTER_DUPLICATE', 409, ..., [{ in: 'body', path: uniqueFields[name], message }])`; `FOREIGN KEY` → `MASTER_INVALID_REF` 422; `REFERENCE` → `MASTER_IN_USE` 409; anything else → rethrown unchanged. `details` uses the same item shape as `validate()` (`utils/validate.js:19`).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -274,7 +274,7 @@ const ref = Object.assign(new Error('The DELETE statement conflicted with the RE
 
 - [ ] **Step 2: Run to verify they fail**
 
-Run in `backend/`: `node --test test/unit/shared/sqlErrors.test.js test/unit/modules/master/service.test.js`
+Run in `backend/`: `node --test test/unit/utils/sqlErrors.test.js test/unit/modules/master/service.test.js`
 Expected: FAIL (`getConstraintConflict is not a function`, `Cannot find module '../../../../modules/master/service'`).
 
 - [ ] **Step 3: Implement `getConstraintConflict`, the repository functions, `createMasterService` and `toMasterError`**
@@ -283,7 +283,7 @@ Process uniques: `{ UQ_master_process_code: 'process_code' }`. Messages: `Proces
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --test test/unit/shared/sqlErrors.test.js test/unit/modules/master/service.test.js`, then `npm test`.
+Run: `node --test test/unit/utils/sqlErrors.test.js test/unit/modules/master/service.test.js`, then `npm test`.
 Expected: all PASS; total = 54 + new.
 
 - [ ] **Step 5: Hand off for review** (diff + suggested commit message `feat(master): add process repository and service with SQL error mapping`).
@@ -301,7 +301,7 @@ Expected: all PASS; total = 54 + new.
 - Test: `backend/test/unit/modules/master/routes.test.js`
 
 **Interfaces:**
-- Consumes: `createMasterService` (B1.2a), `validate` (`shared/validate.js:7`), `createApp` (`app.js:6`), `startApp` (`test/helpers/startApp.js:4`).
+- Consumes: `createMasterService` (B1.2a), `validate` (`utils/validate.js:7`), `createApp` (`app.js:6`), `startApp` (`test/helpers/startApp.js:4`).
 - Produces:
   - `schemas.js`: `idParams` (`{ id: z.coerce.number().int().positive() }`), `processBody` (`process_code` trim 1–10, `process_name` trim 1–50, `can_clear_tag` boolean default `false`).
   - `createMasterController({ service })` → handlers `listProcesses`, `createProcess`, `updateProcess`, `deleteProcess`. Each reads `req.valid`, calls the service, sends 200 / 201 / 204.
@@ -509,14 +509,14 @@ Routes: `POST /locations` with `" GR_F2 "` → service got `location_code: 'GR_F
 - Modify: `overview_diagram/README.md` — banner at the top only, no other change
 - Modify: roadmap
 
-- [ ] **Step 1: Read the real tree** — `ls` of `backend/` and `backend/modules/master/`, `backend/shared/`, `backend/test/`. Every rule in the README must match a file that exists.
+- [ ] **Step 1: Read the real tree** — `ls` of `backend/` and `backend/modules/master/`, `backend/utils/`, `backend/test/`. Every rule in the README must match a file that exists.
 
 - [ ] **Step 2: Write `backend/README.md`** with these sections, short lists and tables only:
 
 | Section | Content |
 | --- | --- |
 | Run | `npm install`, `npm test`; link `docs/runbooks/dev-database-setup.md`; env names from `.env.example` (no values) |
-| Folder map | One line per folder: `app.js` / `server.js`, `db.js`, `modules/<name>/`, `shared/`, `routes/` (legacy), `services/` (legacy), `scripts/`, `sql/`, `test/unit/`, `test/helpers/` |
+| Folder map | One line per folder: `app.js` / `server.js`, `db.js`, `modules/<name>/`, `utils/`, `routes/` (legacy), `services/` (legacy), `scripts/`, `sql/`, `test/unit/`, `test/helpers/` |
 | Module layout | `modules/<name>/{routes,controller,service,repository,schemas,index}.js`: one-line duty each, and who may import whom (routes → controller → service → repository → `db.js`) |
 | Naming | camelCase files; PascalCase only for a file that exports a class (`AppError.js`); factories are `createXxx({ deps })`; tests mirror the source path as `<file>.test.js` |
 | Rules | New code imports only `db.js` (`query`, `transaction`, `typed`), never `getPool`; errors are `AppError` with a code from spec section 9; input is checked by zod in `validate`; every endpoint has a Bruno request |

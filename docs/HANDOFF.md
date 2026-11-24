@@ -3,7 +3,7 @@
 - Date: 2026-11-24
 - From: TODO (name / role)
 - To: TODO (name / role)
-- Branch: `ccr-ddedd00a-ab6muc` (the old `ayt-rfid` branch is no longer used)
+- Branch: `main` (the old `ayt-rfid` branch is no longer used)
 
 ## State in short
 

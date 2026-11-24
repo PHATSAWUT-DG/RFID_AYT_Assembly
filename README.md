@@ -12,6 +12,29 @@ Tracks bearing lots through the assembly and gauging line at the NHT Bearing fac
 
 Statuses in the seed, in order: `REGISTERED` → `GR_F1` (Gauging Room F1) → `MC_F1` (MC Gauging F1) → `CLEARED`.
 
+## Glossary
+
+| Term | Meaning |
+| --- | --- |
+| Lot (`lot_no`) | One batch of bearings with a barcode. The unit the system tracks |
+| Tag (`tag_code`) | An RFID tag. It carries one lot at a time and is reused after a clear. `is_active = 0` retires a damaged tag |
+| Pair / pairing | The link "this tag carries this lot now". A lot has at most one active pairing |
+| WOS | Work order number from AS400. One WOS has many lots and one part, and runs on one or more machines |
+| BRG type (`brg_type`) | Bearing type, the part number (e.g. `6204ZZCM`). The dashboard groups by it |
+| Spec (`spec`) | Spec number of the lot, from AS400 |
+| M/C no. (`mc_no`) | Machine number, from the machine API |
+| AS400 | The factory ERP. Source of lot info and of "lot is done" |
+| Process | A production stage that groups locations (e.g. GAUGING `1500`). `can_clear_tag` says if a manual clear is allowed there |
+| Location | A place on the line with a reader (`bf_gr_f1`, `gr_f1`, `mc_f1`). One location belongs to one process |
+| Status | Where the lot is now. Each active status maps to one location. `CLEARED` closes the pairing |
+| Scan | A reader read of a tag at a location. It moves the lot to that location's status. The last scan wins |
+| Abnormal scan | A scan that skips a stage or moves backward. The lot still moves, and the event is flagged (spec D22) |
+| Duplicate read | A scan at the lot's current location. Only `last_seen_at` is updated, no event |
+| Unknown read | A scan of a tag that has no active pairing |
+| Clear | Close the pairing and free the tag. Auto clear: a job asks the done API. Manual clear: an admin forces it with a remark |
+| Done API | AS400 endpoint that answers "is this lot finished". URL not provided by IT yet |
+| `emp_id` | Employee ID of the operator or admin, sent with each action |
+
 | Part | Folder | Stack | Duty |
 | --- | --- | --- | --- |
 | Frontend | `frontend/` | React 19, Vite 8, TypeScript, Tailwind, Vitest | Screens for operators and admins |
@@ -43,6 +66,7 @@ Env var names are in `backend/.env.example` and `frontend/.env.example`. Never c
 | Doc | Read it for |
 | --- | --- |
 | [`docs/HANDOFF.md`](docs/HANDOFF.md) | Current state, next tasks, known issues. **Start here** |
+| [`AGENTS.md`](AGENTS.md) | Rules for AI agents and humans: safety rules, done checklist, commands |
 | [`backend/README.md`](backend/README.md) | Backend folder map, layers, naming and rules |
 | [`frontend/README.md`](frontend/README.md) | Frontend scripts |
 | [Backend redesign spec](docs/superpowers/specs/2026-10-01-backend-redesign-design.md) | Data model, decisions D1–D22, API, error codes |

@@ -1,0 +1,64 @@
+info:
+  name: Processes - Update
+  type: http
+  seq: 3
+
+http:
+  method: PUT
+  url: "{{urlPrefix}}/api/assembly/processes/1"
+  body:
+    type: json
+    data: |-
+      {
+        "process_code": "9999",
+        "process_name": "Test Process Updated",
+        "can_clear_tag": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Update a process by id. Send the full body (same fields as Create). Returns the updated row.
+  Every field is required, with no defaults (same body as Create). PUT replaces the whole row, so a missing field is a 400, never a silent reset.
+  `:id` must be a positive integer.
+
+  ### 200 Updated
+  ```json
+  { "data": { "id": 3, "process_code": "9999", "process_name": "Test Process Updated", "can_clear_tag": true } }
+  ```
+
+  ### 400 VALIDATION_ERROR
+  Bad or incomplete body (e.g. `can_clear_tag` missing), or `:id` is not a positive integer.
+  ```json
+  {
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "Request validation failed",
+      "details": [{ "in": "params", "path": "id", "message": "Invalid input: expected number, received NaN" }],
+      "request_id": "3f6c1b0e-0000-4000-8000-000000000001"
+    }
+  }
+  ```
+
+  ### 404 MASTER_NOT_FOUND
+  ```json
+  { "error": { "code": "MASTER_NOT_FOUND", "message": "Process 99 not found", "request_id": "3f6c1b0e-0000-4000-8000-000000000001" } }
+  ```
+
+  ### 409 MASTER_DUPLICATE
+  ```json
+  {
+    "error": {
+      "code": "MASTER_DUPLICATE",
+      "message": "Process code already exists",
+      "details": [{ "in": "body", "path": "process_code", "message": "Process code already exists" }],
+      "request_id": "3f6c1b0e-0000-4000-8000-000000000001"
+    }
+  }
+  ```

@@ -1,0 +1,42 @@
+info:
+  name: Lot - Get By Lot
+  type: http
+  seq: 19
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/lot-by-lot/DEMO000001"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Find the active lot (status not Completed) by lot number.
+
+  ### 200 Found
+  ```json
+  {
+    "lot_no": "DEMO000001",
+    "wos": "WOS2609001",
+    "qty": 500,
+    "tag_id": "E280116000000001",
+    "status_id": 1,
+    "brg_type": "6204ZZCM",
+    "spec": "SPEC-6204"
+  }
+  ```
+
+  ### 404 Lot not found
+  ```json
+  { "error": "LOT_NOT_FOUND" }
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Failed to connect to database" }
+  ```

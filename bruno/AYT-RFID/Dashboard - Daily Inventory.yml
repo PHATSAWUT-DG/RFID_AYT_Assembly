@@ -1,0 +1,43 @@
+info:
+  name: Dashboard - Daily Inventory
+  type: http
+  seq: 34
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/dashboard/daily-inventory"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  PROPOSED contract, not built in the backend yet (waiting for IT). Only the frontend mock serves it.
+
+  Daily inventory at gauging, one flat row per machine. A part can have many WOS and run on many
+  machines; each machine row belongs to one WOS. The frontend groups rows by part_no, then wos,
+  lists the distinct mc_no per WOS, and sums qty per WOS and per part.
+
+  ### 200 With rows
+  ```json
+  [
+    { "mc_no": "MC-01", "part_no": "6204ZZCM", "wos": "W000101", "qty": 999 },
+    { "mc_no": "MC-02", "part_no": "6204ZZCM", "wos": "W000101", "qty": 500 },
+    { "mc_no": "MC-03", "part_no": "6204ZZCM", "wos": "W000102", "qty": 250 },
+    { "mc_no": "MC-04", "part_no": "6205DDUCM", "wos": "W000201", "qty": 640 }
+  ]
+  ```
+
+  ### 200 Empty
+  ```json
+  []
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Failed to connect to database" }
+  ```

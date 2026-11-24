@@ -1,0 +1,60 @@
+info:
+  name: Lot - Change Process
+  type: http
+  seq: 23
+
+http:
+  method: POST
+  url: "{{urlPrefix}}/api/assembly/change-process"
+  body:
+    type: json
+    data: |-
+      {
+        "tag_id": "E280116000000001",
+        "status_id": 2,
+        "location_name": "GAUGING ROOM F1",
+        "remark": "Manual change",
+        "emp_id": "MOCK001"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Change the status of a lot by hand. `location_name`, `remark` and `emp_id` are optional.
+  Business errors come back as HTTP 200 with a code in `result`.
+
+  ### 200 Changed
+  ```json
+  { "result": "OK" }
+  ```
+
+  ### 200 Tag unknown
+  ```json
+  { "result": "TAG_NOT_FOUND" }
+  ```
+
+  ### 200 status_id not in master data
+  ```json
+  { "result": "INVALID_STATUS" }
+  ```
+
+  ### 200 Lot is already Completed
+  ```json
+  { "result": "ALREADY_COMPLETED" }
+  ```
+
+  ### 200 Lot already has this status
+  ```json
+  { "result": "SAME_STATUS" }
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Failed to connect to database" }
+  ```

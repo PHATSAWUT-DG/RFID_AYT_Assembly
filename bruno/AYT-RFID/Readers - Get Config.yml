@@ -1,0 +1,32 @@
+info:
+  name: Readers - Get Config
+  type: http
+  seq: 25
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/readers-config"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Read the RFID reader list from `service/reader_config.json`.
+
+  ### 200 Config
+  ```json
+  [
+    { "type": "gr_f1", "location_name": "GAUGING ROOM F1", "enabled": true, "ip": "192.0.2.10", "power": 10 },
+    { "type": "mc_f1", "location_name": "MC GAUGING F1", "enabled": false, "ip": "192.0.2.11", "power": 10 }
+  ]
+  ```
+
+  ### 500 File missing or invalid JSON
+  ```json
+  { "error": "ENOENT: no such file or directory, open '../service/reader_config.json'" }
+  ```

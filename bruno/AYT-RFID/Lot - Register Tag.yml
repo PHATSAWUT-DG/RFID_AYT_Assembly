@@ -1,0 +1,57 @@
+info:
+  name: Lot - Register Tag
+  type: http
+  seq: 20
+
+http:
+  method: POST
+  url: "{{urlPrefix}}/api/assembly/register-tag"
+  body:
+    type: json
+    data: |-
+      {
+        "tag_id": "E280116000000001",
+        "lot_no": "DEMO000001",
+        "wos": "WOS2609001",
+        "brg_type": "6204ZZCM",
+        "spec": "SPEC-6204",
+        "qty": 500,
+        "location_name": "GAUGING ROOM F1"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Register a lot and bind it to a tag. The new lot starts at status 1 (Before Issue).
+  `location_name` is optional. Business errors come back as HTTP 200 with a code in `result`.
+
+  ### 200 Registered
+  ```json
+  { "result": "OK" }
+  ```
+
+  ### 200 Lot already registered
+  ```json
+  { "result": "LOT_ALREADY_EXISTS" }
+  ```
+
+  ### 200 Tag bound to another active lot
+  ```json
+  { "result": "TAG_IN_USE" }
+  ```
+
+  ### 200 Status 1 missing in master data
+  ```json
+  { "result": "INVALID_STATUS" }
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Failed to connect to database" }
+  ```

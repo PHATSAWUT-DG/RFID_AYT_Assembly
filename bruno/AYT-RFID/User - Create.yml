@@ -1,0 +1,45 @@
+info:
+  name: User - Create
+  type: http
+  seq: 15
+
+http:
+  method: POST
+  url: "{{urlPrefix}}/api/assembly/login/users"
+  body:
+    type: json
+    data: |-
+      {
+        "emp_id": "MOCK099",
+        "eng_name": "Test",
+        "eng_surname": "User",
+        "password": "DEMO1234",
+        "position": "user"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Create a user. The password is hashed with bcrypt before it is stored.
+  A database error (for example a duplicate emp_id) comes back as HTTP 200 with the message in `result`.
+
+  ### 200 Created
+  ```json
+  { "result": "OK" }
+  ```
+
+  ### 200 Database error in result
+  ```json
+  { "result": "Cannot insert duplicate key row in object 'dbo.tb_assy_login' with unique index." }
+  ```
+
+  ### 500 Unexpected error
+  ```json
+  { "error": "Illegal arguments: undefined, number" }
+  ```

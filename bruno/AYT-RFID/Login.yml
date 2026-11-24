@@ -1,0 +1,50 @@
+info:
+  name: Login
+  type: http
+  seq: 13
+
+http:
+  method: POST
+  url: "{{urlPrefix}}/api/assembly/login"
+  body:
+    type: json
+    data: |-
+      {
+        "emp_id": "MOCK001",
+        "password": "DEMO1234"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Check employee id and password. The password hash is never returned.
+
+  ### 200 Success
+  ```json
+  {
+    "result": "OK",
+    "user": {
+      "id": 1,
+      "emp_id": "MOCK001",
+      "eng_name": "DEMO",
+      "eng_surname": "ADMIN",
+      "position": "admin"
+    }
+  }
+  ```
+
+  ### 401 Wrong emp_id or password
+  ```json
+  { "error": "INVALID_CREDENTIALS" }
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Failed to connect to database" }
+  ```

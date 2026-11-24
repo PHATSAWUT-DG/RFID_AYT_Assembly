@@ -22,6 +22,7 @@ ENABLED_READERS = [r for r in ALL_READERS if r.get("enabled", True)]
 
 COOLDOWN = 10
 NODE_URL  = "http://localhost:5001/api/assembly"
+PORT      = 8001
 
 # ===== STATE =====
 def make_reader_state(cfg):
@@ -179,3 +180,7 @@ def restart():
         os.kill(os.getpid(), signal.SIGTERM)
     threading.Thread(target=do_restart, daemon=True).start()
     return {"result": "OK"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=PORT)

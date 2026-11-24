@@ -1,0 +1,40 @@
+info:
+  name: Create Mock Lot
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{urlPrefix}}/api/assembly/mock-done"
+  body:
+    type: json
+    data: |-
+      {
+        "lot_no": "DEMO000001"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Add a lot number to the mock-done list.
+
+  ### 200 Added
+  ```json
+  { "result": "OK" }
+  ```
+
+  ### 200 Already in the list
+  ```json
+  { "result": "ALREADY_EXISTS" }
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Invalid object name 'tb_assy_mock_done'." }
+  ```

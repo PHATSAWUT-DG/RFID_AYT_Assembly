@@ -1,0 +1,86 @@
+info:
+  name: Dashboard - Summary
+  type: http
+  seq: 29
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/dashboard"
+  params:
+    - name: date_from
+      value: 2026-09-29
+      type: query
+    - name: date_to
+      value: 2026-09-29
+      type: query
+    - name: brg_type
+      value: 6204ZZCM
+      type: query
+      disabled: true
+    - name: wos
+      value: WOS2609001
+      type: query
+      disabled: true
+    - name: lot_no
+      value: DEMO000001
+      type: query
+      disabled: true
+    - name: status_id
+      value: "1"
+      type: query
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Dashboard data for active lots (status not Completed). All query params are optional.
+  `brg_type`, `wos` and `lot_no` match by "contains". `summary` holds quantity sums (pieces).
+  `top5` counts lots per bearing type, not pieces. `lots` has at most 200 rows.
+  When no lot matches, the sums in `summary` are `null`.
+
+  ### 200 With data
+  ```json
+  {
+    "summary": { "total_qty": 1500, "bf_issue": 500, "gr_f1": 600, "mc_f1": 400 },
+    "top5": [
+      { "brg_type": "6204ZZCM", "total_qty": 2 },
+      { "brg_type": "NS7S", "total_qty": 1 }
+    ],
+    "lots": [
+      {
+        "tag_id": "E280116000000001",
+        "lot_no": "DEMO000001",
+        "wos": "WOS2609001",
+        "qty": 500,
+        "status_id": 2,
+        "label_status": "Gauging Room F1",
+        "brg_type": "6204ZZCM",
+        "spec": "SPEC-6204",
+        "location_name": "GAUGING ROOM F1",
+        "machine_no": null,
+        "created_at": "2026-09-29T10:00:00.000Z",
+        "updated_at": "2026-09-29T10:30:00.000Z"
+      }
+    ]
+  }
+  ```
+
+  ### 200 No matching lots
+  ```json
+  {
+    "summary": { "total_qty": null, "bf_issue": null, "gr_f1": null, "mc_f1": null },
+    "top5": [],
+    "lots": []
+  }
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Failed to connect to database" }
+  ```

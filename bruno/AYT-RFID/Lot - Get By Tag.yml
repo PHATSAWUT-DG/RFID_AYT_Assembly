@@ -1,0 +1,42 @@
+info:
+  name: Lot - Get By Tag
+  type: http
+  seq: 18
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/lot-by-tag/E280116000000001"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Find the active lot (status not Completed) that holds a tag.
+
+  ### 200 Found
+  ```json
+  {
+    "lot_no": "DEMO000001",
+    "wos": "WOS2609001",
+    "qty": 500,
+    "tag_id": "E280116000000001",
+    "status_id": 1,
+    "brg_type": "6204ZZCM",
+    "spec": "SPEC-6204"
+  }
+  ```
+
+  ### 404 Tag not found
+  ```json
+  { "error": "TAG_NOT_FOUND" }
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Failed to connect to database" }
+  ```

@@ -1,0 +1,34 @@
+info:
+  name: Readers - Status
+  type: http
+  seq: 27
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/readers-status"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Connection status of the enabled readers, taken from the Python reader service.
+  If that service is down or slow (3 s timeout), the route still returns 200 with an empty list.
+
+  ### 200 Readers
+  ```json
+  {
+    "readers": [
+      { "index": 0, "type": "gr_f1", "ip": "192.0.2.10", "connected": true }
+    ]
+  }
+  ```
+
+  ### 200 Reader service unreachable
+  ```json
+  { "readers": [] }
+  ```

@@ -1,0 +1,52 @@
+info:
+  name: Clear Tag - History
+  type: http
+  seq: 33
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/clear-tag/history"
+  params:
+    - name: date_from
+      value: 2026-09-29
+      type: query
+    - name: date_to
+      value: 2026-09-29
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Completed lots (tag cleared), newest first, at most 200 rows. Filters by the clear date. Both params are optional.
+
+  ### 200 With rows
+  ```json
+  [
+    {
+      "lot_no": "DEMO000001",
+      "tag_id": "E280116000000001",
+      "emp_id": "MOCK001",
+      "remark": "Finished",
+      "cleared_at": "2026-09-29T11:00:00.000Z",
+      "updated_at": "2026-09-29T11:00:00.000Z",
+      "brg_type": "6204ZZCM",
+      "spec": "SPEC-6204"
+    }
+  ]
+  ```
+
+  ### 200 Empty
+  ```json
+  []
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Failed to connect to database" }
+  ```

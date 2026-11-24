@@ -1,0 +1,37 @@
+info:
+  name: Delete Mock Lots
+  type: http
+  seq: 4
+
+http:
+  method: DELETE
+  url: "{{urlPrefix}}/api/assembly/mock-done/DEMO000001"
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Remove a lot number from the mock-done list.
+
+  ### 200 Removed
+  ```json
+  { "result": "OK" }
+  ```
+
+  ### 200 Lot not in the list
+  ```json
+  { "result": "NOT_FOUND" }
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Invalid object name 'tb_assy_mock_done'." }
+  ```

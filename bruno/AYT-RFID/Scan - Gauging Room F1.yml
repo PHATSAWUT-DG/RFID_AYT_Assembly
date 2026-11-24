@@ -1,0 +1,48 @@
+info:
+  name: Scan - Gauging Room F1
+  type: http
+  seq: 21
+
+http:
+  method: POST
+  url: "{{urlPrefix}}/api/assembly/gauging-room-f1"
+  body:
+    type: json
+    data: |-
+      {
+        "tag_id": "E280116000000001",
+        "location_name": "GAUGING ROOM F1"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  A tag is scanned at the Gauging Room F1 reader. Moves the lot to status 2 (Gauging Room F1).
+  The reader service calls this route. `location_name` is optional.
+  Business errors come back as HTTP 200 with a code in `result`.
+
+  ### 200 Moved
+  ```json
+  { "result": "OK" }
+  ```
+
+  ### 200 Tag unknown
+  ```json
+  { "result": "TAG_NOT_FOUND" }
+  ```
+
+  ### 200 Lot is not at the right step
+  ```json
+  { "result": "INVALID_PROCESS" }
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Failed to connect to database" }
+  ```

@@ -1,0 +1,25 @@
+info:
+  name: Readers - Restart
+  type: http
+  seq: 28
+
+http:
+  method: POST
+  url: "{{urlPrefix}}/api/assembly/readers-restart"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Ask the Python reader service to restart. The route always returns 200 OK,
+  even when the reader service cannot be reached.
+
+  ### 200 Restart requested (or service unreachable)
+  ```json
+  { "result": "OK" }
+  ```

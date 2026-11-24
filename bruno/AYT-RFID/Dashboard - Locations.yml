@@ -1,0 +1,37 @@
+info:
+  name: Dashboard - Locations
+  type: http
+  seq: 32
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/dashboard/locations"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Location names taken from `service/reader_config.json` (readers with a location_name). Used for the location filter.
+
+  ### 200 With rows
+  ```json
+  [
+    { "location_name": "GAUGING ROOM F1" },
+    { "location_name": "MC GAUGING F1" }
+  ]
+  ```
+
+  ### 200 No readers with a location
+  ```json
+  []
+  ```
+
+  ### 500 File missing or invalid JSON
+  ```json
+  { "error": "ENOENT: no such file or directory, open '../service/reader_config.json'" }
+  ```

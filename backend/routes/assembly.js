@@ -1,46 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs');
-const { sql, poolPromise } = require('../database');
+const { sql, getPool } = require('../db');
 const axios = require('axios');
+const db = require('../db');
+const { insertApiLog } = require('../services/apiLogService');
+const { listMockDone, addMockDone, removeMockDone } = require('../services/mockService');
+const { verifyLogin, listUsers, createUser, updateUser, deleteUser } = require('../services/userService');
 
-const API_TOKEN = process.env.API_TOKEN;
+
+const BEARER_TOKEN = `Bearer ${process.env.API_TOKEN}`
 const API_RECEIVE_URL = process.env.API_RECEIVE_URL;
-
-// HELPER
-const logApi = async (pool, data) => {
-    try {
-        await pool.request()
-            .input('api_type', sql.VarChar, data.api_type || null)
-            .input('method', sql.VarChar, data.method || null)
-            .input('url', sql.VarChar, data.url || null)
-            .input('request_params', sql.VarChar, data.request_params || null)
-            .input('request_body', sql.VarChar, data.request_body || null)
-            .input('http_status', sql.Int, data.http_status || null)
-            .input('status', sql.VarChar, data.status || null)
-            .input('response', sql.VarChar, data.response || null)
-            .input('error_msg', sql.VarChar, data.error_msg || null)
-            .input('response_time_ms', sql.Int, data.response_time_ms || null)
-            .execute('Stored_tb_assy_api_log_insert');
-    } catch (err) {
-        console.error('[API Log Error]', err.message);
-    }
-};
 
 // LOT
 // ดึงข้อมูล lot จาก AS400
 router.get('/lot/:lot_no', async (req, res) => {
-    const pool = await poolPromise;
     const url = `${API_RECEIVE_URL}/${req.params.lot_no}`;
     const start = Date.now();
     try {
         const result = await axios.get(url, {
-            headers: { Authorization: API_TOKEN }
+            headers: { Authorization: BEARER_TOKEN }
         });
         const response_time_ms = Date.now() - start;
         const data = result.data[0];
 
-        await logApi(pool, {
+        await insertApiLog(db, {
             api_type: 'RECEIVE', method: 'GET', url,
             request_params: req.params.lot_no,
             http_status: result.status,
@@ -60,7 +44,7 @@ router.get('/lot/:lot_no', async (req, res) => {
         });
     } catch (err) {
         const response_time_ms = Date.now() - start;
-        await logApi(pool, {
+        await insertApiLog(db, {
             api_type: 'RECEIVE', method: 'GET', url,
             request_params: req.params.lot_no,
             http_status: err.response?.status || null,
@@ -76,7 +60,7 @@ router.get('/lot/:lot_no', async (req, res) => {
 // ดึงข้อมูล lot จาก tag_id
 router.get('/lot-by-tag/:tag_id', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('tag_id', sql.VarChar, req.params.tag_id)
             .input('lot_no', sql.VarChar, null)
@@ -92,7 +76,7 @@ router.get('/lot-by-tag/:tag_id', async (req, res) => {
 // ดึงจาก lot_no
 router.get('/lot-by-lot/:lot_no', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('tag_id', sql.VarChar, null)
             .input('lot_no', sql.VarChar, req.params.lot_no)
@@ -110,7 +94,7 @@ router.get('/lot-by-lot/:lot_no', async (req, res) => {
 router.post('/register-tag', async (req, res) => {
     try {
         const { tag_id, lot_no, wos, brg_type, spec, qty, location_name } = req.body;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('lot_no', sql.VarChar, lot_no)
             .input('wos', sql.VarChar, wos)
@@ -130,7 +114,7 @@ router.post('/register-tag', async (req, res) => {
 router.post('/gauging-room-f1', async (req, res) => {
     try {
         const { tag_id, location_name } = req.body;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('tag_id', sql.VarChar, tag_id)
             .input('location_name', sql.VarChar, location_name || null)
@@ -145,7 +129,7 @@ router.post('/gauging-room-f1', async (req, res) => {
 router.post('/mc-gauging-f1', async (req, res) => {
     try {
         const { tag_id, location_name } = req.body;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('tag_id', sql.VarChar, tag_id)
             .input('location_name', sql.VarChar, location_name || null)
@@ -160,7 +144,7 @@ router.post('/mc-gauging-f1', async (req, res) => {
 router.post('/change-process', async (req, res) => {
     try {
         const { tag_id, status_id, location_name, remark, emp_id } = req.body;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('tag_id', sql.VarChar, tag_id)
             .input('status_id', sql.Int, status_id)
@@ -178,7 +162,7 @@ router.post('/change-process', async (req, res) => {
 router.post('/completed', async (req, res) => {
     try {
         const { lot_no, remark, emp_id, machine_no } = req.body;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('lot_no', sql.VarChar, lot_no)
             .input('remark', sql.VarChar, remark || null)
@@ -195,7 +179,7 @@ router.post('/completed', async (req, res) => {
 // router.post('/in-assy', async (req, res) => {
 //     try {
 //         const { tag_id } = req.body;
-//         const pool = await poolPromise;
+//         const pool = await getPool();
 //         const result = await pool.request()
 //             .input('tag_id', sql.VarChar, tag_id)
 //             .execute('Stored_tb_assy_in_assy');
@@ -208,7 +192,7 @@ router.post('/completed', async (req, res) => {
 // router.post('/wip-gauging', async (req, res) => {
 //     try {
 //         const { tag_id } = req.body;
-//         const pool = await poolPromise;
+//         const pool = await getPool();
 //         const result = await pool.request()
 //             .input('tag_id', sql.VarChar, tag_id)
 //             .execute('Stored_tb_assy_wip_gauging');
@@ -220,39 +204,18 @@ router.post('/completed', async (req, res) => {
 
 // MOCK DONE
 router.get('/mock-done', async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .execute('Stored_tb_assy_mock_done_select');
-        res.json(result.recordset);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    try { res.json(await listMockDone(db)); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.post('/mock-done', async (req, res) => {
-    try {
-        const { lot_no } = req.body;
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('lot_no', sql.VarChar, lot_no)
-            .execute('Stored_tb_assy_mock_done_insert');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    try { res.json(await addMockDone(db, req.body.lot_no)); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.delete('/mock-done/:lot_no', async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('lot_no', sql.VarChar, req.params.lot_no)
-            .execute('Stored_tb_assy_mock_done_delete');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    try { res.json(await removeMockDone(db, req.params.lot_no)); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // READER CONFIG
@@ -296,190 +259,39 @@ router.post('/readers-restart', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { emp_id, password } = req.body;
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('emp_id', sql.VarChar, emp_id)
-            .input('password', sql.VarChar, password)
-            .execute('Stored_tb_assy_login_verify');
-        if (result.recordset.length === 0)
-            return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
-        res.json({ result: 'OK', user: result.recordset[0] });
+        const user = await verifyLogin(db, emp_id, password);
+        if (!user) return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
+        res.json({ result: 'OK', user });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
 router.get('/login/users', async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .execute('Stored_tb_assy_login_select');
-        res.json(result.recordset);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    try { res.json(await listUsers(db)); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.post('/login/users', async (req, res) => {
-    try {
-        const { emp_id, eng_name, eng_surname, password, position } = req.body;
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('emp_id', sql.VarChar, emp_id)
-            .input('eng_name', sql.VarChar, eng_name)
-            .input('eng_surname', sql.VarChar, eng_surname)
-            .input('password', sql.VarChar, password)
-            .input('position', sql.VarChar, position)
-            .execute('Stored_tb_assy_login_insert');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    try { res.json(await createUser(db, req.body)); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.put('/login/users/:id', async (req, res) => {
-    try {
-        const { eng_name, eng_surname, position } = req.body;
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, req.params.id)
-            .input('eng_name', sql.VarChar, eng_name)
-            .input('eng_surname', sql.VarChar, eng_surname)
-            .input('position', sql.VarChar, position)
-            .execute('Stored_tb_assy_login_update');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    try { res.json(await updateUser(db, { id: req.params.id, ...req.body })); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.delete('/login/users/:id', async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, req.params.id)
-            .execute('Stored_tb_assy_login_delete');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// STATUS MASTER
-router.get('/status', async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .execute('Stored_tb_master_assy_status_select');
-        res.json(result.recordset);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.post('/status', async (req, res) => {
-    try {
-        const { status, label_status, process_id } = req.body;
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('status', sql.VarChar, status)
-            .input('label_status', sql.VarChar, label_status)
-            .input('process_id', sql.Int, process_id || null)
-            .execute('Stored_tb_master_assy_status_insert');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.put('/status/:id', async (req, res) => {
-    try {
-        const { status, label_status, process_id } = req.body;
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, req.params.id)
-            .input('status', sql.VarChar, status)
-            .input('label_status', sql.VarChar, label_status)
-            .input('process_id', sql.Int, process_id || null)
-            .execute('Stored_tb_master_assy_status_update');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.delete('/status/:id', async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, req.params.id)
-            .execute('Stored_tb_master_assy_status_delete');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// MASTER PROCESS
-// ================================================================
-
-router.get('/process', async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .execute('Stored_tb_master_process_select');
-        res.json(result.recordset);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.post('/process', async (req, res) => {
-    try {
-        const { process_code, process_name } = req.body;
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('process_code', sql.VarChar, process_code)
-            .input('process_name', sql.VarChar, process_name)
-            .execute('Stored_tb_master_process_insert');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.put('/process/:id', async (req, res) => {
-    try {
-        const { process_code, process_name } = req.body;
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, req.params.id)
-            .input('process_code', sql.VarChar, process_code)
-            .input('process_name', sql.VarChar, process_name)
-            .execute('Stored_tb_master_process_update');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.delete('/process/:id', async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, req.params.id)
-            .execute('Stored_tb_master_process_delete');
-        res.json({ result: result.recordset[0].result });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    try { res.json(await deleteUser(db, req.params.id)); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // DASHBOARD
 router.get('/dashboard', async (req, res) => {
     try {
         const { date_from, date_to, brg_type, wos, lot_no, status_id } = req.query;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('date_from', sql.Date, date_from || null)
             .input('date_to', sql.Date, date_to || null)
@@ -501,7 +313,7 @@ router.get('/dashboard', async (req, res) => {
 router.get('/dashboard/history', async (req, res) => {
     try {
         const { date_from, date_to, brg_type, wos, lot_no, status_id, location_name } = req.query;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('date_from', sql.Date, date_from || null)
             .input('date_to', sql.Date, date_to || null)
@@ -519,7 +331,7 @@ router.get('/dashboard/history', async (req, res) => {
 
 router.get('/dashboard/process-summary', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .execute('Stored_tb_assy_dashboard_process_summary');
         res.json(result.recordset);
@@ -544,7 +356,7 @@ router.get('/dashboard/locations', async (req, res) => {
 router.get('/clear-tag/history', async (req, res) => {
     try {
         const { date_from, date_to } = req.query;
-        const pool = await poolPromise;
+        const pool = await getPool();
         const result = await pool.request()
             .input('date_from', sql.Date, date_from || null)
             .input('date_to',   sql.Date, date_to   || null)

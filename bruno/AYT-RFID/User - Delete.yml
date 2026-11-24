@@ -1,0 +1,33 @@
+info:
+  name: User - Delete
+  type: http
+  seq: 17
+
+http:
+  method: DELETE
+  url: "{{urlPrefix}}/api/assembly/login/users/1"
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Delete a user by id. Deleting an id that does not exist still returns OK.
+  A database error comes back as HTTP 200 with the message in `result`.
+
+  ### 200 Deleted
+  ```json
+  { "result": "OK" }
+  ```
+
+  ### 200 Database error in result
+  ```json
+  { "result": "Invalid object name 'tb_assy_login'." }
+  ```

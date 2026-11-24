@@ -1,0 +1,37 @@
+info:
+  name: Dashboard - Process Summary
+  type: http
+  seq: 31
+
+http:
+  method: GET
+  url: "{{urlPrefix}}/api/assembly/dashboard/process-summary"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Inventory quantity (pieces) per process, from active lots. Ordered by process_code.
+
+  ### 200 With rows
+  ```json
+  [
+    { "process_code": "1400", "process_name": "BEFORE ISSUE", "inventory_qty": 500 },
+    { "process_code": "1500", "process_name": "GAUGING", "inventory_qty": 1000 }
+  ]
+  ```
+
+  ### 200 Empty
+  ```json
+  []
+  ```
+
+  ### 500 Database error
+  ```json
+  { "error": "Failed to connect to database" }
+  ```

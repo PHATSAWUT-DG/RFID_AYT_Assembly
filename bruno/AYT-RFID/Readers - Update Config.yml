@@ -1,0 +1,49 @@
+info:
+  name: Readers - Update Config
+  type: http
+  seq: 26
+
+http:
+  method: PUT
+  url: "{{urlPrefix}}/api/assembly/readers-config"
+  body:
+    type: json
+    data: |-
+      [
+        {
+          "type": "gr_f1",
+          "location_name": "GAUGING ROOM F1",
+          "enabled": true,
+          "ip": "192.0.2.10",
+          "power": 10
+        },
+        {
+          "type": "mc_f1",
+          "location_name": "MC GAUGING F1",
+          "enabled": true,
+          "ip": "192.0.2.11",
+          "power": 10
+        }
+      ]
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Overwrite `service/reader_config.json` with the request body. The body is written as is, with no validation.
+  Call "Readers - Restart" afterwards so the reader service reloads it.
+
+  ### 200 Saved
+  ```json
+  { "result": "OK" }
+  ```
+
+  ### 500 Cannot write the file
+  ```json
+  { "error": "EACCES: permission denied, open '../service/reader_config.json'" }
+  ```

@@ -1,0 +1,38 @@
+info:
+  name: User - Update
+  type: http
+  seq: 16
+
+http:
+  method: PUT
+  url: "{{urlPrefix}}/api/assembly/login/users/1"
+  body:
+    type: json
+    data: |-
+      {
+        "eng_name": "Test",
+        "eng_surname": "Updated",
+        "position": "admin"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  Update name and position of a user. It does not change emp_id or password.
+  A database error comes back as HTTP 200 with the message in `result`.
+
+  ### 200 Updated
+  ```json
+  { "result": "OK" }
+  ```
+
+  ### 200 Database error in result
+  ```json
+  { "result": "Invalid column name 'position'." }
+  ```

@@ -12,6 +12,8 @@
 
 ## Status
 
+> **Archived 2026-11-24: completed.** The table below was not updated after Task 3. The code shows Tasks 4–5 are done: `frontend/vite.config.js`, `frontend/eslint.config.js`, Vite scripts in `frontend/package.json`.
+
 | # | Task | Status | Model / where |
 |---|---|---|---|
 | 1 | Rename JSX files `.js` → `.jsx` | `[DONE]` | Main session (Sonnet 5, medium) |

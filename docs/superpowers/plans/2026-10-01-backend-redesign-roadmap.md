@@ -1,8 +1,8 @@
 # Backend Redesign — Roadmap
 
 - Spec: `docs/superpowers/specs/2026-10-01-backend-redesign-design.md` (Draft v3)
-- Branch: `ayt-rfid`
-- How this file works: one line per task, for every branch. Only the branch that is starting gets a detailed step-by-step plan (`2026-10-01-b<N>-<name>.md`). The detail for later branches is written when they start, against the code that exists by then.
+- Branch: `ccr-ddedd00a-ab6muc` (was `ayt-rfid` until 2026-10-30)
+- How this file works: one line per task, for every branch. Only the branch that is starting gets a detailed step-by-step plan (`2026-10-01-b<N>-<name>.md`). The detail for later branches is written when they start, against the code that exists by then. Finished plans move to `docs/archive/backend/`.
 - Execution: inline, one task at a time, you review each diff before the next task (`superpowers:executing-plans`). No subagents.
 - Every task: unit tests I can run, Bruno request for each endpoint it touches, runbook for any flow you run yourself, old route handlers it replaces deleted in the same task.
 
@@ -10,9 +10,9 @@
 
 | Branch | Plan file | Status |
 | --- | --- | --- |
-| B0 Foundation | `2026-10-01-b0-foundation.md` | [x] B0.1–B0.4 done, 54 unit tests pass, server smoke test OK |
-| B1 Master data | `2026-10-01-b1-master-data.md` | [x] B1.1–B1.6 done, 107 unit tests pass. User Bruno run for processes / locations / statuses pending |
-| B1x Structure, envelope, ORM | `2026-10-27-b1x-structure-envelope-orm.md` | [x] Tasks 1–5 done. Tasks 6–7 (Sequelize) dropped 2026-10-30: repositories stay raw SQL on `mssql` |
+| B0 Foundation | `docs/archive/backend/2026-10-01-b0-foundation.md` | [x] B0.1–B0.4 done, 54 unit tests pass, server smoke test OK |
+| B1 Master data | `docs/archive/backend/2026-10-01-b1-master-data.md` | [x] B1.1–B1.6 done, 107 unit tests pass. User Bruno run for processes / locations / statuses pending |
+| B1x Structure, envelope, ORM | `docs/archive/backend/2026-10-27-b1x-structure-envelope-orm.md` | [x] Tasks 1–5 done. Tasks 6–7 (Sequelize) dropped 2026-10-30: repositories stay raw SQL on `mssql` |
 | B2 Register / pair | written when B1 is done | [ ] |
 | B3 Scan | written when B2 is done | [ ] |
 | B4 Clear | written when B3 is done | [ ] |

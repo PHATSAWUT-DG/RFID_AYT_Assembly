@@ -6,4 +6,5 @@ __pycache__/
 build/
 # python
 service/.venv/
+*.stackdump
 __pycache__/

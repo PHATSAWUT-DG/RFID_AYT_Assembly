@@ -1,8 +1,8 @@
 # Backend Redesign — Lot / Tag Journey (Design Spec)
 
 - Date: 2026-10-01
-- Branch: `ayt-rfid`
-- Status: **Draft v3 — waiting for review** (v3: status moved to the lot, `is_terminal` dropped, API log kept)
+- Branch: `ccr-ddedd00a-ab6muc` (was `ayt-rfid` until 2026-10-30)
+- Status: **Accepted v3** — B0 and B1 are built on it (v3: status moved to the lot, `is_terminal` dropped, API log kept). Live task status: `docs/superpowers/plans/2026-10-01-backend-redesign-roadmap.md`
 - Scope: branches B0–B5 (see section 2). B6 and B7 get their own short specs later.
 
 ---
@@ -31,8 +31,8 @@ Context: the old flow never ran in production. Old tables and SPs are already dr
 
 | # | Branch | Duty | Status |
 | --- | --- | --- | --- |
-| B0 | Foundation | Folder layout, error handling, validation, app/server split, test helpers. Removes the old polling in `server.js` (it queries tables that no longer exist); B4 adds the new job. | [ ] |
-| B1 | Master data | Process, location, status. Admin CRUD. | [ ] |
+| B0 | Foundation | Folder layout, error handling, validation, app/server split, test helpers. Removes the old polling in `server.js` (it queries tables that no longer exist); B4 adds the new job. | [x] |
+| B1 | Master data | Process, location, status. Admin CRUD. | [x] |
 | B2 | Register / pair | AS400 lot client, lot snapshot, tag auto-create, pair, tag retire | [ ] |
 | B3 | Scan (journey) | Scan endpoint, rule "last scan wins", unknown reads | [ ] |
 | B4 | Clear | Done API client, auto clear (job) + runbook, manual clear (web) | [ ] |
